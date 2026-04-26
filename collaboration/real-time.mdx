@@ -1,0 +1,66 @@
+---
+title: "Real-time collaborative editing with Nextcloud Text"
+description: "How Nextcloud Text enables multiple users to edit simultaneously using Yjs CRDT, with live cursors, presence indicators, and automatic conflict resolution."
+---
+
+Nextcloud Text lets multiple users edit the same document at the same time. Changes from every participant appear instantly for everyone in the session, with colored carets showing where each person is working — no manual merging, no conflicts, and no Nextcloud account required for guest collaborators.
+
+## How synchronization works
+
+Nextcloud Text uses [Yjs](https://yjs.dev), a Conflict-free Replicated Data Type (CRDT) framework, rather than operational transforms. With CRDTs, every client holds a full replica of the document state. Each edit is represented as an independent, commutative operation that can be applied in any order and always converges to the same result.
+
+<Info>
+  Because Yjs is a CRDT, two users can type simultaneously in different parts of the document and their changes will always merge correctly — there is no concept of a merge conflict.
+</Info>
+
+The browser-side Yjs document is connected to the server through `SyncServiceProvider`, which bridges the Yjs protocol to Nextcloud Text's HTTP polling backend via a WebSocket polyfill. Steps (encoded Yjs update messages) are pushed to and pulled from the server over standard HTTP.
+
+## Live cursors and presence
+
+Every active session participant is shown as a colored caret in the editor. The caret color is derived from the user's Nextcloud avatar color (or a randomly assigned color for guests). A label displaying the user's display name or guest name appears briefly above the caret whenever their cursor moves or they type.
+
+The `CollaborationCaret` extension handles this using [Yjs awareness](https://docs.yjs.dev/api/about-awareness), a lightweight protocol that propagates ephemeral state (cursor position, user metadata) alongside document changes without affecting the persistent document history.
+
+<Tip>
+  Guest users who join through a public share link are shown as "Guest" in the caret label unless they provide a name when joining.
+</Tip>
+
+## Collaborator presence timing
+
+The client tracks collaborator activity using two thresholds defined in `SyncService`:
+
+| Constant | Value | Meaning |
+|---|---|---|
+| `COLLABORATOR_IDLE_TIME` | 60 seconds | A collaborator is considered idle after 60 s of no contact |
+| `COLLABORATOR_DISCONNECT_TIME` | 90 seconds | A collaborator is removed from the active presence list after 90 s |
+
+The polling backend uses `lastContact` timestamps returned with each sync response to decide whether a collaborator is still active.
+
+## Idle session timeout
+
+If no document changes are synced for an extended period, the editor suspends the connection and switches the document to read-only mode.
+
+<Warning>
+  The idle timeout is **1440 seconds** (24 minutes). After this period of inactivity, the session is suspended. A button to reconnect appears so you can resume editing without losing your work.
+</Warning>
+
+When the tab becomes hidden (for example, the user switches to another browser tab), the polling interval increases to 20 seconds to reduce server load. When the tab becomes visible again, the interval resets immediately.
+
+## Guest and public share collaboration
+
+Users do not need a Nextcloud account to collaborate. Anyone with access to a public share link can open the document and edit it alongside logged-in users. The server-side `SessionController` marks public session endpoints with `#[PublicPage]`, so no authentication is required for sync, push, save, or close operations on those routes.
+
+Guest sessions include a `guestName` field instead of `userId`. The guest's color is derived from their name, which makes it stable across page reloads as long as the same name is used.
+
+## Session-based architecture
+
+Every open document corresponds to a server-side document record with a monotonically increasing step version. Each connected browser tab holds a session, and the session token is used to authenticate subsequent push and sync requests.
+
+<CardGroup cols={2}>
+  <Card title="Document sessions and sync protocol" icon="rotate" href="/collaboration/sessions">
+    Learn about the full session lifecycle — create, sync, push, save, and close.
+  </Card>
+  <Card title="Mentioning users" icon="at" href="/collaboration/mentions">
+    Use @mentions to notify colleagues and trigger Nextcloud notifications.
+  </Card>
+</CardGroup>

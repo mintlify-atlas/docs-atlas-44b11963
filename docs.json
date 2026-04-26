@@ -1,126 +1,106 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "Nextcloud Text",
+  "theme": "palm",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0ea4be",
+    "light": "#545454",
+    "dark": "#0ea4be"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/56049795-4ee1-4c3a-b422-adc3d6257af1.png",
+  "logo": {
+    "light": "https://media.brand.dev/e39478e6-9a5b-4c50-9ada-b6dbecca38a7.png",
+    "dark": "https://media.brand.dev/e39478e6-9a5b-4c50-9ada-b6dbecca38a7.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/nextcloud/text"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/nextcloud/text"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Get Started",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "installation",
+              "quickstart"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Using the Editor",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "editor/overview",
+              "editor/formatting",
+              "editor/math",
+              "editor/tables",
+              "editor/attachments"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Collaboration",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/components",
-              "essentials/reusable-snippets"
+              "collaboration/real-time",
+              "collaboration/sessions",
+              "collaboration/mentions"
             ]
           },
           {
-            "group": "Agent ready",
+            "group": "Configuration",
             "pages": [
-              "agent-ready/prompt",
-              "agent-ready/visibility",
-              "agent-ready/contextual",
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "configuration/admin",
+              "configuration/workspace"
+            ]
+          },
+          {
+            "group": "Integration",
+            "pages": [
+              "integration/embed-editor",
+              "integration/php-events",
+              "integration/direct-editing",
+              "integration/mime-types"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Developer Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "JavaScript API",
             "pages": [
-              "api-reference/introduction"
+              "api/create-editor",
+              "api/editor-instance",
+              "api/create-table"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Extensions",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api/extensions/overview",
+              "api/extensions/rich-text",
+              "api/extensions/plain-text"
+            ]
+          },
+          {
+            "group": "Backend API",
+            "pages": [
+              "api/backend/session",
+              "api/backend/workspace",
+              "api/backend/attachments"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

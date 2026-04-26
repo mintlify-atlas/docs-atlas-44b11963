@@ -1,0 +1,80 @@
+---
+title: "Document sessions and sync protocol in Nextcloud Text"
+description: "Understand how Nextcloud Text manages document sessions — creating, syncing, saving, and closing editing sessions with version history."
+---
+
+Nextcloud Text uses a session-based sync protocol to coordinate edits between clients and the server. Every time a user opens a document, the client creates a server-side session, then continuously pulls new steps and pushes local changes until the user closes the tab or the session expires.
+
+## Session lifecycle
+
+<Steps>
+  <Step title="Create">
+    The client calls `PUT /session/{documentId}/create` to open a session. The server returns a document record, a session token, the current document state (a serialized Yjs document), and a `readOnly` flag. If no saved state exists yet, the server returns the raw file content instead so the client can initialize Yjs from scratch.
+  </Step>
+  <Step title="Sync">
+    The `PollingBackend` repeatedly calls `POST /session/{documentId}/sync` to fetch new steps from the server since the client's current version. The response includes new steps, the current list of active sessions, and an updated document record.
+  </Step>
+  <Step title="Push">
+    When the user makes changes, the client calls `POST /session/{documentId}/push` to send encoded Yjs steps and an awareness message to the server. The server appends the steps to the document's step log and forwards them to other active sessions via Nextcloud's notify-push service (if available).
+  </Step>
+  <Step title="Save">
+    The client periodically calls `POST /session/{documentId}/save` to persist the current document content and Yjs state to the underlying file in Nextcloud Files. The save endpoint accepts the rendered Markdown content and the serialized Yjs document state.
+  </Step>
+  <Step title="Close">
+    When the user closes the editor, the client calls `POST /session/{documentId}/close` to clean up the server-side session. If no other sessions remain open for that document, the server releases the file lock.
+  </Step>
+</Steps>
+
+## API endpoints
+
+All session endpoints are prefixed with `/apps/text` in the Nextcloud URL space. Public share sessions use the `/public/` variants.
+
+| Method | Path | Description |
+|---|---|---|
+| `PUT` | `/session/{documentId}/create` | Open a new editing session |
+| `POST` | `/session/{documentId}/sync` | Pull new steps from the server |
+| `POST` | `/session/{documentId}/push` | Push local steps to the server |
+| `POST` | `/session/{documentId}/save` | Persist the document to the file |
+| `POST` | `/session/{documentId}/close` | End the session |
+
+<Note>
+  Public share endpoints mirror the above routes under `/public/session/{documentId}/`. They are marked `#[PublicPage]` and do not require a Nextcloud login.
+</Note>
+
+## Polling intervals
+
+The `PollingBackend` adapts its fetch frequency based on document activity:
+
+| Condition | Interval |
+|---|---|
+| Active changes arriving | 300 ms (minimum) |
+| Multiple users, no new steps | Increases up to 5 000 ms |
+| Single user only | 5 000 ms |
+| Tab is hidden (Page Visibility API) | 20 000 ms |
+| Read-only user | 30 000 ms |
+| Notify-push available | 30 000 ms (push-driven) |
+
+When Nextcloud's [notify-push](https://github.com/nextcloud/notify_push) app is active, the server pushes a `text_steps` message to connected clients over a WebSocket, allowing the polling interval to relax to 30 seconds between checks.
+
+## Error types
+
+`SyncService` defines a set of typed errors that the editor UI uses to show appropriate messages or dialogs:
+
+| Error | Value | Cause |
+|---|---|---|
+| `SAVE_COLLISSION` | `0` | The file was modified outside the editor while a save was in progress |
+| `PUSH_FAILURE` | `1` | Pushing steps failed after the maximum number of retries |
+| `LOAD_ERROR` | `2` | The server returned an unexpected error when loading the document |
+| `CONNECTION_FAILED` | `3` | Network error or request timeout (`ECONNABORTED`) |
+| `SOURCE_NOT_FOUND` | `4` | The file or session no longer exists (HTTP 403 or 404) |
+| `PUSH_FORBIDDEN` | `5` | The document is read-only or the session is no longer authorized |
+
+## Save collisions
+
+A save collision (`SAVE_COLLISSION`) occurs when the underlying Nextcloud file is changed by another source — for example, a desktop sync client or another application — while an editing session is active. The server detects this by comparing ETags.
+
+<Warning>
+  When a save collision is detected, the editor shows a conflict resolution dialog. The `outsideChange` field in the server response contains the current file content so the user can compare the two versions and decide how to proceed.
+</Warning>
+
+The polling backend handles the HTTP `409 Conflict` response by first applying any returned steps to update the client's document version, then emitting the `SAVE_COLLISSION` error to trigger the conflict dialog.

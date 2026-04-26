@@ -1,0 +1,56 @@
+---
+title: "What is Nextcloud Text?"
+description: "Intro to Nextcloud Text — the default collaborative Markdown editor for Nextcloud 17+, built on Tiptap and ProseMirror with Yjs real-time sync."
+---
+
+Nextcloud Text is the default document editor bundled with Nextcloud, providing real-time collaborative editing of Markdown and plain-text files through a clean WYSIWYG interface. This page explains what Nextcloud Text is, what it can do, and how its major components fit together.
+
+## Overview
+
+Nextcloud Text has been the default editor since **Nextcloud 17**. It opens automatically whenever you click a `.md` or `.txt` file in your Nextcloud Files view. Documents are stored as standard Markdown, so they remain readable and editable in any other text editor.
+
+The app is licensed under **AGPL-3.0** and is developed as a Nextcloud app with a PHP backend and a JavaScript/Vue frontend.
+
+## Key features
+
+- **Real-time collaboration** — Multiple users can edit the same document simultaneously. Changes are synchronized using [Yjs](https://yjs.dev) CRDT (Conflict-free Replicated Data Type), which merges concurrent edits without conflicts.
+- **WYSIWYG rich-text editing** — A toolbar lets you apply headings, bold, italic, underline, strikethrough, lists, blockquotes, and code blocks without writing Markdown syntax directly.
+- **Markdown file format** — All documents are saved as plain Markdown files, keeping them portable and compatible with any editor.
+- **LaTeX math** — Write mathematical formulas using LaTeX syntax. Inline math uses single dollar signs (`$E=mc^2$`) and block math uses double dollar signs (`$$...$$`), rendered live by KaTeX.
+- **Syntax highlighting** — Fenced code blocks support syntax highlighting for a wide range of programming languages via highlight.js.
+- **Tables** — Create and edit rich tables directly in the editor.
+- **Attachments and images** — Embed images and upload media files into documents.
+- **@mentions** — Mention Nextcloud users in documents with `@username` to notify them and link to their profile.
+
+## Architecture
+
+Nextcloud Text is built on three main layers:
+
+**Frontend — Tiptap and ProseMirror**
+
+The editing surface is powered by [Tiptap](https://tiptap.dev), a headless rich-text editor framework built on top of [ProseMirror](https://prosemirror.net). ProseMirror provides the document model and rendering engine; Tiptap adds a modular extension system and Vue integration. Each editor feature (bold, tables, math, mentions, etc.) is implemented as a discrete Tiptap extension.
+
+**Collaboration — Yjs CRDT**
+
+Real-time sync is handled by [Yjs](https://yjs.dev), a high-performance CRDT library. The `y-prosemirror` binding connects the Yjs document model to the ProseMirror editor state, so every keystroke is represented as a CRDT operation that can be merged with concurrent edits from other users without conflicts. Presence indicators (colored cursors) come from the `@tiptap/extension-collaboration-caret` extension.
+
+**Backend — PHP with session management**
+
+The PHP backend manages editing sessions, document persistence, and access control. It handles WebDAV integration for file storage and exposes REST endpoints for session lifecycle, workspace data, and attachment uploads. A background job (`OCA\Text\Cron\Cleanup`) periodically cleans up stale sessions.
+
+## Explore the docs
+
+<CardGroup cols={2}>
+  <Card title="Install Nextcloud Text" icon="download" href="/installation">
+    Enable the app in your Nextcloud instance, or set up a development environment with HMR.
+  </Card>
+  <Card title="Get started" icon="rocket" href="/quickstart">
+    Open your first document, format content, and invite collaborators in minutes.
+  </Card>
+  <Card title="Using the editor" icon="pen-to-square" href="/editor/overview">
+    Formatting, math, tables, attachments, and everything the editor supports.
+  </Card>
+  <Card title="Collaboration" icon="users" href="/collaboration/real-time">
+    Real-time editing sessions, presence indicators, and @mentions.
+  </Card>
+</CardGroup>

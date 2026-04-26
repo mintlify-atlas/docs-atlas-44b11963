@@ -1,0 +1,110 @@
+---
+title: 'PHP events and server-side integration'
+description: 'Use Nextcloud Text PHP events to load the editor and respond to mentions — covering LoadEditor dispatch and MentionEvent handling.'
+---
+
+Nextcloud Text exposes two PHP events in the `OCA\Text\Event` namespace that you can use from your own Nextcloud app: `LoadEditor` to trigger asset loading and `MentionEvent` to react when a user is mentioned in a document.
+
+## Available events
+
+<CardGroup cols={2}>
+  <Card title="LoadEditor" icon="circle-play">
+    Dispatch this event from your PHP controller to load the Text app's JavaScript and CSS assets into the page.
+  </Card>
+  <Card title="MentionEvent" icon="at">
+    Listen for this event to be notified when a user is `@`-mentioned inside a Text document.
+  </Card>
+</CardGroup>
+
+## `LoadEditor`
+
+**Namespace:** `OCA\Text\Event\LoadEditor`
+
+Dispatching `LoadEditor` from your controller or page registration causes the Text app to add its compiled JavaScript bundle and stylesheet to the current HTTP response. After the page loads, `window.OCA.Text` becomes available in the browser.
+
+```php
+use OCA\Text\Event\LoadEditor;
+
+// Guard against Text not being installed
+if (class_exists(LoadEditor::class)) {
+    $this->eventDispatcher->dispatchTyped(new LoadEditor());
+}
+```
+
+<Note>
+  The `class_exists` check keeps your app functional when the Text app is not installed. Without it, your app would throw a fatal error on Nextcloud instances that do not have Text enabled.
+</Note>
+
+The event carries no data — its purpose is purely to signal to the Text app that it should enqueue its assets. Once `LoadEditor` is dispatched, you can use the [JavaScript API](/integration/embed-editor) to mount an editor instance on the page.
+
+## `MentionEvent`
+
+**Namespace:** `OCA\Text\Event\MentionEvent`
+
+The Text app fires `MentionEvent` each time a user is `@`-mentioned in a document. The event provides access to both the prepared `INotification` object and the `File` that was being edited when the mention occurred.
+
+### Event properties
+
+| Method | Return type | Description |
+|---|---|---|
+| `getNotification()` | `OCP\Notification\INotification` | The notification that is about to be sent to the mentioned user. |
+| `getFile()` | `OCP\Files\File` | The file in which the mention occurred. |
+
+### Listening for `MentionEvent`
+
+Register a listener in your app's `Application.php` (or equivalent bootstrap class) using the event dispatcher:
+
+```php
+use OCA\Text\Event\MentionEvent;
+use OCP\EventDispatcher\IEventDispatcher;
+
+// Inside your Application::register() or boot() method
+$dispatcher->addListener(
+    MentionEvent::class,
+    function (MentionEvent $event): void {
+        $notification = $event->getNotification();
+        $file = $event->getFile();
+
+        // Inspect or modify the notification before it is sent,
+        // or perform a side-effect such as logging the mention.
+    }
+);
+```
+
+<Tip>
+  If you only need to react to the mention without altering the notification, use `addListener`. If you want to modify the `INotification` object before it is dispatched to users, you can mutate it directly inside the listener — the Text app passes the same object instance.
+</Tip>
+
+### Checking whether Text is installed
+
+Because `MentionEvent` is defined in the Text app, you must guard the listener registration so your app does not break when Text is absent:
+
+```php
+use OCP\EventDispatcher\IEventDispatcher;
+
+// Only register if the Text app is present
+if (class_exists(\OCA\Text\Event\MentionEvent::class)) {
+    $dispatcher->addListener(
+        \OCA\Text\Event\MentionEvent::class,
+        function (\OCA\Text\Event\MentionEvent $event): void {
+            // React to the mention
+        }
+    );
+}
+```
+
+## Summary
+
+<AccordionGroup>
+  <Accordion title="When should I dispatch LoadEditor?">
+    Dispatch `LoadEditor` in any PHP controller or page registration where you intend to render an embedded Text editor. It must be called before the HTTP response is sent so that the assets are included in the page.
+  </Accordion>
+
+  <Accordion title="Can I suppress a mention notification from MentionEvent?">
+    The `MentionEvent` gives you access to the `INotification` object before it is sent. You can inspect its properties, but the Text app controls whether the notification is ultimately dispatched. The event is informational — use it for side-effects such as custom logging or secondary notifications in your own app.
+  </Accordion>
+
+  <Accordion title="Do I need to declare a dependency on the Text app?">
+    If your app's core functionality depends on Text, declare it as a dependency in your `appinfo/info.xml`. If Text is optional, use `class_exists` guards as shown in the examples above.
+  </Accordion>
+</AccordionGroup>

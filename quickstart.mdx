@@ -1,81 +1,97 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
-icon: 'rocket'
+title: "Get started with Nextcloud Text"
+description: "Learn how to open, edit, and share documents in Nextcloud Text — and get a real-time collaborative editing session running in under 5 minutes."
 ---
 
-## Get started in three steps
+This page walks you through the essentials of Nextcloud Text: opening a document, formatting content, switching views, sharing with collaborators, and using keyboard shortcuts. You can follow these steps in any Nextcloud 17+ instance with the Text app enabled.
 
-Get your documentation site running locally and make your first customization.
+## Open or create a document
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Open an existing file">
+    In **Nextcloud Files**, click any `.md` or `.txt` file. It opens directly in the Nextcloud Text editor.
+  </Step>
+  <Step title="Create a new document">
+    Click the **+** (New) button in the Files toolbar. Select **New document** to create a new `.md` file. Give it a name and press Enter — the editor opens immediately.
+  </Step>
+</Steps>
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Edit your document
 
-### Step 2: Deploy your changes
+The editor opens in rich-text (WYSIWYG) mode by default. You can type freely and apply formatting using the toolbar at the top of the editor.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+### Using the toolbar
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+The toolbar provides quick access to the most common formatting options:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+- **Headings** — Select a paragraph and choose H1–H6 from the heading dropdown.
+- **Bold** — `Ctrl+B` / `Cmd+B`, or click the **B** button.
+- **Italic** — `Ctrl+I` / `Cmd+I`, or click the **I** button.
+- **Lists** — Click the ordered or unordered list buttons to start a list. Press Tab to indent a list item.
+- **Code block** — Click the code block button to insert a fenced code block with syntax highlighting.
+- **Blockquote** — Click the quote button to wrap a paragraph in a blockquote.
+- **Math** — Click the math button to insert a LaTeX formula block. Inline math can be typed directly with `$formula$`.
 
-### Step 3: Go live
+### Switching between rich-text and source view
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+To view or edit the raw Markdown source, click the **Source** toggle in the editor toolbar. Switch back to rich-text mode by clicking **Rich text**.
+
+<Note>
+  Switching views does not change the file content — the document is always saved as Markdown regardless of which view you use.
+</Note>
+
+## Share a document and collaborate
+
+<Steps>
+  <Step title="Share the file">
+    In Nextcloud Files, right-click the document (or open the file details panel) and click **Share**. Enter a Nextcloud username, group, or generate a public share link.
+  </Step>
+  <Step title="Invite collaborators to edit">
+    When sharing with a specific user, make sure the **Can edit** permission is enabled. Users with edit access can open the document and type at the same time as you.
+  </Step>
+  <Step title="Open the document together">
+    Both you and your collaborator open the document in Nextcloud Files. You will see each other's presence indicators — colored cursors with names — appear in real time as soon as a second person opens the file.
+  </Step>
+  <Step title="Edit simultaneously">
+    Type in any part of the document. Changes from all active collaborators appear instantly. Yjs CRDT conflict resolution ensures no edits are lost, even if two people type in the same location at the same time.
+  </Step>
+</Steps>
+
+<Tip>
+  You can share a document with anyone, even people who do not have a Nextcloud account, using a public share link. Guests can view or edit based on the permissions you set.
+</Tip>
+
+## Mention a collaborator
+
+Type `@` followed by a username anywhere in the document to mention a Nextcloud user. A suggestion popover appears — select the user to insert the mention. The mentioned user receives a Nextcloud notification.
+
+## Keyboard shortcuts
+
+| Action | Shortcut |
+|---|---|
+| Bold | `Ctrl+B` / `Cmd+B` |
+| Italic | `Ctrl+I` / `Cmd+I` |
+| Underline | `Ctrl+U` / `Cmd+U` |
+| Undo | `Ctrl+Z` / `Cmd+Z` |
+| Redo | `Ctrl+Shift+Z` / `Cmd+Shift+Z` |
+| Heading 1 | `Ctrl+Alt+1` / `Cmd+Alt+1` |
+| Heading 2 | `Ctrl+Alt+2` / `Cmd+Alt+2` |
+| Inline code | `Ctrl+E` / `Cmd+E` |
+| Soft line break (inside math block) | `Shift+Enter` |
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Formatting" icon="text-size" href="/editor/formatting">
+    Full reference for all formatting options: headings, lists, code, tables, and more.
+  </Card>
+  <Card title="Math formulas" icon="square-root-variable" href="/editor/math">
+    Write LaTeX inline and block math expressions rendered by KaTeX.
+  </Card>
+  <Card title="Real-time collaboration" icon="users" href="/collaboration/real-time">
+    Learn how Yjs CRDT powers conflict-free simultaneous editing.
+  </Card>
+  <Card title="Embed the editor" icon="code" href="/integration/embed-editor">
+    Integrate Nextcloud Text into your own app using the JavaScript API.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

@@ -1,0 +1,91 @@
+---
+title: "Editor overview and interface"
+description: "Tour of the Nextcloud Text editor interface — toolbar sections, source view toggle, outline panel, and full keyboard shortcut reference."
+---
+
+Nextcloud Text is a WYSIWYG editor that saves documents as plain Markdown, giving you a familiar word-processor feel while keeping files portable and editable in any text application. This page walks through the main interface elements you will encounter when working with `.md` or `.txt` files in Nextcloud.
+
+## Reading vs editing mode
+
+When you open a file, Nextcloud Text determines the initial mode based on your server's configuration. An admin can set documents to open read-only by default; individual users can toggle between modes at any time.
+
+- **Read mode** — formatted document view, no cursor, no toolbar. Useful for reviewing content without accidentally changing it.
+- **Edit mode** — full toolbar appears, cursor is active, and you can type or use Markdown shortcuts.
+
+Click **Edit** in the top-right area to switch to edit mode, or **Done** to return to read mode.
+
+## The toolbar
+
+The toolbar appears at the top of the editor in edit mode. Its items are grouped by function:
+
+<CardGroup cols={2}>
+  <Card title="History" icon="arrow-rotate-left">
+    **Undo** (`Ctrl+Z`) and **Redo** (`Ctrl+Y`) let you step through recent changes.
+  </Card>
+  <Card title="Headings" icon="heading">
+    A dropdown for H1–H6. Each level has a keyboard shortcut (`Ctrl+Shift+1` through `Ctrl+Shift+6`).
+  </Card>
+  <Card title="Inline formatting" icon="bold">
+    Bold, Italic, Underline, Strikethrough, and Highlight. All have keyboard shortcuts.
+  </Card>
+  <Card title="Lists" icon="list">
+    Unordered list, ordered list, and to-do list. Includes indent/unindent controls.
+  </Card>
+  <Card title="Blocks" icon="code">
+    Blockquote, code block, inline math, block math, and callout variants (info, success, warning, danger).
+  </Card>
+  <Card title="Insert" icon="paperclip">
+    Table, details/summary, link, and attachment upload.
+  </Card>
+</CardGroup>
+
+<Note>
+On mobile devices the emoji picker is not shown in the toolbar.
+</Note>
+
+## Outline / table of contents panel
+
+The outline panel lists all headings in the document and lets you jump to any section with a click.
+
+- **Toggle from the toolbar** — open the **Headings** dropdown and select **Show outline** (or **Hide outline** to close it). This option is not shown in rich workspace mode.
+- **Keyboard shortcut** — `Ctrl+Alt+H` toggles the outline from anywhere in the editor.
+
+## Source view (raw Markdown)
+
+Nextcloud Text stores every document as plain Markdown. While the default view renders formatting visually, you can inspect or edit the raw Markdown syntax directly if needed. Paste operations use the same Markdown parser: text copied from the clipboard is interpreted as Markdown by default. Hold `Shift` while pasting to insert text literally without Markdown interpretation.
+
+<Tip>
+Pasting Markdown from another application — including content with math formulas or tables — renders it correctly in the editor automatically.
+</Tip>
+
+## Formatting help modal
+
+The toolbar overflow menu includes a **Formatting help** button that opens a reference modal listing supported Markdown syntax. Use it as a quick cheat-sheet while writing.
+
+## Keyboard shortcuts reference
+
+| Action | Windows / Linux | macOS |
+|---|---|---|
+| Undo | `Ctrl+Z` | `Cmd+Z` |
+| Redo | `Ctrl+Y` | `Cmd+Y` |
+| Bold | `Ctrl+B` | `Cmd+B` |
+| Italic | `Ctrl+I` | `Cmd+I` |
+| Underline | `Ctrl+U` | `Cmd+U` |
+| Strikethrough | `Ctrl+Shift+S` | `Cmd+Shift+S` |
+| Highlight | `Ctrl+Shift+H` | `Cmd+Shift+H` |
+| Heading 1 | `Ctrl+Shift+1` | `Cmd+Shift+1` |
+| Heading 2 | `Ctrl+Shift+2` | `Cmd+Shift+2` |
+| Heading 3 | `Ctrl+Shift+3` | `Cmd+Shift+3` |
+| Heading 4 | `Ctrl+Shift+4` | `Cmd+Shift+4` |
+| Heading 5 | `Ctrl+Shift+5` | `Cmd+Shift+5` |
+| Heading 6 | `Ctrl+Shift+6` | `Cmd+Shift+6` |
+| Unordered list | `Ctrl+Shift+8` | `Cmd+Shift+8` |
+| Ordered list | `Ctrl+Shift+7` | `Cmd+Shift+7` |
+| To-do list | `Ctrl+Shift+9` | `Cmd+Shift+9` |
+| Indent list item | `Tab` | `Tab` |
+| Outdent list item | `Shift+Tab` | `Shift+Tab` |
+| Blockquote | `Ctrl+Shift+B` | `Cmd+Shift+B` |
+| Code block | `Ctrl+Alt+C` | `Cmd+Alt+C` |
+| Insert link | `Ctrl+K` | `Cmd+K` |
+| Toggle outline | `Ctrl+Alt+H` | `Cmd+Alt+H` |
+| Save | `Ctrl+S` | `Cmd+S` |

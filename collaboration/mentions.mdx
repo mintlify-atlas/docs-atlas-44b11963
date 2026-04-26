@@ -1,0 +1,84 @@
+---
+title: "Mentioning colleagues with @mentions in Nextcloud Text"
+description: "Use @mentions in Nextcloud Text to notify colleagues — type @ to search users, insert a mention, and trigger a Nextcloud notification."
+---
+
+Nextcloud Text supports @mentions so you can bring colleagues into a document conversation. Type `@` followed by a name to open an autocomplete dropdown, pick a user, and insert a mention. The mentioned user receives a Nextcloud notification linking them back to the file.
+
+## Using @mentions
+
+<Steps>
+  <Step title="Type @ in the document">
+    Place your cursor anywhere in the document body and type `@`. An autocomplete dropdown appears immediately.
+  </Step>
+  <Step title="Search for a user">
+    Continue typing a name or username to filter the list. The editor queries the `POST /api/v1/users` endpoint and returns matching Nextcloud users.
+  </Step>
+  <Step title="Select a user">
+    Click a name in the dropdown or use the arrow keys and press **Enter** to insert the mention.
+  </Step>
+</Steps>
+
+## How notifications work
+
+When you insert a @mention, the editor sends a `PUT /session/{documentId}/mention` request to the server. The server's `NotificationService` creates a Nextcloud notification for the mentioned user with the subject `mentioned` and a reference to the file.
+
+<Note>
+  Self-mentions are silently ignored — mentioning yourself does not create a notification.
+  Duplicate notifications are also suppressed: if a user has an unread mention notification for the same file, a second mention will not create another one.
+</Note>
+
+For guest users editing through a public share link, the server only allows mentioning users who are currently active in the same document session. Mentioning a user who is not in the session returns HTTP `403`.
+
+## Mention format in Markdown
+
+Mentions are serialized to Markdown using a custom link syntax:
+
+```markdown
+@[Display Name](mention://user/encoded-user-id)
+```
+
+This format preserves the display name and user ID so mentions survive round-trips through the Markdown file and are correctly resolved when the document is reopened.
+
+The HTML representation uses a `<span>` with `data-type="user"`:
+
+```html
+<span data-type="user" data-id="user-id" class="mention">Display Name</span>
+```
+
+## Mention extension
+
+The mention feature is implemented as a Tiptap extension that extends the official `@tiptap/extension-mention` package. The extension adds:
+
+- A custom `parseHTML` rule that reads `<span data-type="user">` elements.
+- A custom `renderHTML` rule that writes the `data-type` and `data-id` attributes.
+- A Vue node view (`Mention.vue`) that renders the inline mention chip inside the editor.
+- A `toMarkdown` serializer that outputs the `@[label](mention://...)` format.
+
+## Embedding: onMentionSearch and onMentionInsert hooks
+
+When you embed Nextcloud Text in your own Nextcloud app using `createEditor()`, you can supply callbacks to control how mention suggestions are fetched and how insertions are handled:
+
+```javascript
+window.OCA.Text.createEditor({
+  el: document.getElementById('editor'),
+  fileId: 42,
+  onMentionSearch: async (query) => {
+    // Return an array of { id, label } objects matching the query.
+    const response = await fetch(`/apps/text/api/v1/users`, {
+      method: 'POST',
+      body: JSON.stringify({ search: query }),
+    })
+    const data = await response.json()
+    return data.users
+  },
+  onMentionInsert: (user) => {
+    // Called when the user selects a suggestion.
+    console.log('Mentioned:', user.id, user.label)
+  },
+})
+```
+
+<Tip>
+  If you do not provide `onMentionSearch`, the editor uses the built-in `POST /api/v1/users` endpoint automatically. Supply the hook only when you need custom filtering or a different data source.
+</Tip>

@@ -1,0 +1,260 @@
+---
+title: 'Embed the editor in your Nextcloud app'
+description: 'Integrate Nextcloud Text into any Nextcloud app using window.OCA.Text.createEditor() — file-based editing or standalone Markdown content mode.'
+---
+
+Nextcloud Text exposes a JavaScript API that lets you embed the rich text editor directly inside any Nextcloud app. This page covers how to load the Text assets from PHP, then use `window.OCA.Text.createEditor()` to mount an editor instance in either file-backed or standalone Markdown content mode.
+
+<Note>
+  `window.OCA.Text` is only available when the Text app is installed and enabled. If your app must function without Text, you need to provide your own editor fallback.
+</Note>
+
+## Load the editor assets
+
+Before you can call the JavaScript API, you must tell Nextcloud to include the Text app's frontend bundle on your page. Do this by dispatching the `LoadEditor` event from your PHP controller or page registration.
+
+```php
+use OCA\Text\Event\LoadEditor;
+
+// Guard against Text not being installed
+if (class_exists(LoadEditor::class)) {
+    $this->eventDispatcher->dispatchTyped(new LoadEditor());
+}
+```
+
+This causes the Text app to inject its compiled JavaScript and CSS into the current page response. The `window.OCA.Text` global will then be available once the page loads.
+
+## Choose an editor mode
+
+`createEditor()` supports two modes depending on whether you are editing an existing file stored in Nextcloud or working with raw Markdown content in memory.
+
+<CardGroup cols={2}>
+  <Card title="File editor mode" icon="file-lines">
+    Backed by a Nextcloud file. Changes are saved to the file via a collaborative session. Pass `fileId` and `filePath`.
+  </Card>
+  <Card title="Markdown content mode" icon="pen-lines">
+    Standalone editor with no server-side file. Pass `content` with the initial Markdown string.
+  </Card>
+</CardGroup>
+
+### File editor mode
+
+Pass `fileId` and `filePath` to open an existing Nextcloud file for editing. The editor creates a collaborative session and saves changes back to the file automatically.
+
+```js
+window.OCA.Text.createEditor({
+    el: document.getElementById('my-editor-div'),
+    fileId: 12345,
+    filePath: '/Readme.md',
+}).then((editor) => {
+    // Editor is ready — call methods on the instance
+    editor.setContent('new content') // Overwrites file content
+    editor.setReadOnly(true)
+    editor.insertAtCursor('<h1>Heading</h1>')
+
+    // Always destroy when removing the DOM element
+    editor.destroy()
+})
+```
+
+<Warning>
+  Calling `editor.setContent()` in file editor mode overwrites the content read from the source file. Use this with care.
+</Warning>
+
+### Markdown content mode
+
+Pass `content` instead of `fileId` to create an in-memory editor that works purely with Markdown strings. No file is read from or written to Nextcloud storage.
+
+```js
+window.OCA.Text.createEditor({
+    el: document.getElementById('my-editor-div'),
+    content: '# Hello world\n\nStart writing here.',
+}).then((editor) => {
+    editor.setContent('new content')
+    editor.setReadOnly(true)
+    editor.insertAtCursor('<h1>Heading</h1>')
+
+    editor.destroy()
+})
+```
+
+## `createEditor()` options
+
+All parameters are optional unless noted otherwise.
+
+### Target element
+
+<AccordionGroup>
+  <Accordion title="el">
+    **Type:** `HTMLElement`
+
+    The DOM element that the editor will be rendered into. The element's existing content is replaced.
+  </Accordion>
+</AccordionGroup>
+
+### File session options
+
+<AccordionGroup>
+  <Accordion title="fileId">
+    **Type:** `number | undefined` — Default: `undefined`
+
+    The Nextcloud file ID to open. When set together with `useSession: true`, the editor opens a collaborative editing session backed by this file.
+  </Accordion>
+
+  <Accordion title="useSession">
+    **Type:** `boolean` — Default: `true`
+
+    Controls whether a collaborative session is created for file-based editing. Set to `false` to open the file without a session.
+  </Accordion>
+
+  <Accordion title="filePath">
+    **Type:** `string | undefined` — Default: `undefined`
+
+    The path of the file relative to the Nextcloud user's files root (e.g. `'/Readme.md'`). Used together with `fileId`.
+  </Accordion>
+
+  <Accordion title="shareToken">
+    **Type:** `string | null` — Default: `null`
+
+    A public share token, required when opening a file through a share link rather than as an authenticated user.
+  </Accordion>
+</AccordionGroup>
+
+### Content options
+
+<AccordionGroup>
+  <Accordion title="content">
+    **Type:** `string` — Default: `''`
+
+    Initial Markdown content for the standalone content editor. Ignored when `fileId` is set and `useSession` is `true`.
+  </Accordion>
+
+  <Accordion title="readOnly">
+    **Type:** `boolean` — Default: `false`
+
+    Starts the editor in read-only mode. Can be changed at runtime with `editor.setReadOnly()`.
+  </Accordion>
+
+  <Accordion title="autofocus">
+    **Type:** `boolean` — Default: `true`
+
+    Whether the editor should receive focus immediately after mounting.
+  </Accordion>
+</AccordionGroup>
+
+### UI customization
+
+<AccordionGroup>
+  <Accordion title="readonlyBar">
+    **Type:** `{ component: Vue component | null, props: object | null }`
+
+    A Vue component rendered into the editor's read-only bar slot, along with any props to pass to that component. Update props at runtime with `editor.updateReadonlyBarProps()`.
+  </Accordion>
+
+  <Accordion title="menubarLinkCustomAction">
+    **Type:** `function | undefined`
+
+    A callback invoked when the user activates the custom link action in the menubar. Use this to handle link insertion in a custom way.
+  </Accordion>
+</AccordionGroup>
+
+### Lifecycle callbacks
+
+<AccordionGroup>
+  <Accordion title="onCreate">
+    **Signature:** `({ markdown }) => void`
+
+    Called once when the editor content is first created. Receives the initial Markdown content.
+  </Accordion>
+
+  <Accordion title="onLoaded">
+    **Signature:** `() => void`
+
+    Called when the editor has fully loaded and is ready to accept user input.
+  </Accordion>
+
+  <Accordion title="onUpdate">
+    **Signature:** `({ markdown }) => void`
+
+    Called every time the document content changes. Receives the updated Markdown content.
+  </Accordion>
+
+  <Accordion title="onTocToggle">
+    **Signature:** `(visible: boolean) => void`
+
+    Called when the table of contents panel is opened or closed.
+  </Accordion>
+
+  <Accordion title="onTocPin">
+    **Signature:** `(fileId: number, keep: boolean) => void`
+
+    Called when the user pins or unpins the table of contents for a file.
+  </Accordion>
+
+  <Accordion title="onAttachmentsUpdated">
+    **Signature:** `({ attachmentSrcs }) => void`
+
+    Called when the list of attachments in the document changes.
+  </Accordion>
+</AccordionGroup>
+
+### Mention callbacks
+
+<AccordionGroup>
+  <Accordion title="onMentionSearch">
+    **Signature:** `(query: string) => Promise<{ [id: string]: string }>`
+
+    Called when the user types `@` followed by a search query. Return a promise that resolves to an object mapping user IDs to display labels. Required to enable mention autocomplete.
+  </Accordion>
+
+  <Accordion title="onMentionInsert">
+    **Signature:** `(id: string) => void`
+
+    Called when the user selects a mention suggestion from the autocomplete list.
+  </Accordion>
+</AccordionGroup>
+
+### Link and search callbacks
+
+<AccordionGroup>
+  <Accordion title="openLinkHandler">
+    **Signature:** `(url: string) => void`
+
+    Override the default link-click behaviour. When provided, this function is called instead of the built-in `openLink` helper whenever a user activates a link in the document.
+  </Accordion>
+
+  <Accordion title="onSearch">
+    **Signature:** `(results) => void`
+
+    Called when the editor emits search results (e.g. after `editor.setSearchQuery()` is used).
+  </Accordion>
+
+  <Accordion title="onFileInsert">
+    **Signature:** `function | undefined`
+
+    Called when the user triggers the attachment insertion prompt inside the editor.
+  </Accordion>
+</AccordionGroup>
+
+## Editor instance methods
+
+After `createEditor()` resolves, the returned `editor` object exposes the following methods.
+
+| Method | Description |
+|---|---|
+| `setContent(content)` | Replace the entire document content with the given Markdown or HTML string. |
+| `getHTML()` | Return the current document content as an HTML string. |
+| `setReadOnly(value)` | Switch read-only mode on (`true`) or off (`false`) at runtime. |
+| `insertAtCursor(content)` | Insert an HTML string at the current cursor position. |
+| `setShowOutline(value)` | Show (`true`) or hide (`false`) the table of contents panel. |
+| `updateReadonlyBarProps(props)` | Update the props passed to the `readonlyBar` component. |
+| `setSearchQuery(query, matchAll)` | Set the active search query and optionally match all occurrences. |
+| `searchNext()` | Move to the next search match. |
+| `searchPrevious()` | Move to the previous search match. |
+| `save()` | Trigger a manual save (file editor mode only). Returns a Promise. |
+| `focus()` | Move focus into the editor. |
+| `destroy()` | Unmount the editor and clean up the Vue instance. Call this when removing the host DOM element. |
+
+<Tip>
+  Always call `editor.destroy()` before removing the container element from the DOM to avoid memory leaks.
+</Tip>

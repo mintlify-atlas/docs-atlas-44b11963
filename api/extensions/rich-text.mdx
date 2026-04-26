@@ -1,0 +1,120 @@
+---
+title: "RichText extension configuration"
+description: "Configure the RichText Tiptap extension for Nextcloud Text — connection, relative path, embedded mode, and mention search options."
+---
+
+Nextcloud Text's WYSIWYG editor is built around the `RichText` extension, which bundles every node, mark, and collaboration feature into a single configurable Tiptap extension. This page covers the options available when using `RichText` directly or through `createRichEditor()`.
+
+## createRichEditor()
+
+The recommended way to create a rich-text editor instance. Accepts a single options object and returns a configured Tiptap `Editor`.
+
+```js
+import { createRichEditor } from './EditorFactory.js'
+
+const editor = createRichEditor({
+  extensions: [],       // additional Tiptap extensions to include
+  connection,           // Yjs provider / collaboration connection
+  relativePath,         // relative path of the document file
+  isEmbedded: false,    // whether the editor is embedded in another app
+  mentionSearch,        // function to search for mentionable users
+})
+```
+
+### Parameters
+
+<ParamField path="extensions" type="Extension[]" default="[]">
+  Additional Tiptap extensions to include alongside the built-in bundle. Any extension whose `name` matches a built-in extension replaces it; all others are appended after the defaults.
+</ParamField>
+
+<ParamField path="connection" type="object">
+  The Yjs collaboration provider. Pass the `connection` object from the Nextcloud Text session to enable real-time co-editing and awareness (cursor presence). When omitted, the editor works in single-user offline mode.
+</ParamField>
+
+<ParamField path="relativePath" type="string">
+  The relative path of the document file within the Nextcloud file system. Used to resolve attachment and image URLs relative to the document's location. Leave empty if absolute URLs are preferred.
+</ParamField>
+
+<ParamField path="isEmbedded" type="boolean" default="false">
+  Set to `true` when the editor is rendered inside another Nextcloud app (for example, in a dashboard widget or a sidebar panel). Adjusts certain behaviours — such as link preview rendering — that work differently in a constrained iframe context.
+</ParamField>
+
+<ParamField path="mentionSearch" type="function">
+  An async function called to resolve user suggestions for the `@mention` picker. Receives the current search string and returns an array of user objects. When omitted, mentions fall back to the default search via the active collaboration `connection`.
+</ParamField>
+
+## RichText.configure()
+
+You can also configure the extension directly without using `createRichEditor()`:
+
+```js
+import RichText from './extensions/RichText.js'
+
+const richTextExtension = RichText.configure({
+  connection: myYjsProvider,
+  relativePath: '/Documents/notes.md',
+  isEmbedded: false,
+  mentionSearch: async (query) => searchUsers(query),
+})
+```
+
+The `configure()` method accepts the same options as the `addOptions()` defaults defined in `src/extensions/RichText.js`:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `connection` | `object \| null` | `null` | Yjs collaboration provider |
+| `editing` | `boolean` | `true` | Enable or disable editing mode. When `false`, the editor renders read-only and skips the Placeholder extension. |
+| `extensions` | `Extension[]` | `[]` | Additional extensions to merge into the bundle |
+| `relativePath` | `string \| null` | `null` | Document's relative path for URL resolution |
+| `isEmbedded` | `boolean` | `false` | Embedded app context |
+| `mentionSearch` | `function \| undefined` | `undefined` | User search function for the mention picker |
+
+## Bundled sub-extensions
+
+`RichText` composes a large set of nodes, marks, and behaviour extensions. The full list (from `src/extensions/RichText.js`) includes:
+
+**Document structure**
+`Document`, `Text`, `Paragraph`, `HardBreak`, `Heading`, `TrailingNode`
+
+**Marks**
+`Strong`, `Italic`, `Underline`, `Strike`, `Code`, `Highlight`, `Link`
+
+**Block nodes**
+`Blockquote`, `BulletList`, `OrderedList`, `ListItem`, `TaskList`, `TaskItem`, `HorizontalRule`, `CodeBlock`, `Details`, `Callouts`, `FrontMatter`
+
+**Tables**
+`EditableTable` (in edit mode) or `Table` (in read-only mode)
+
+**Media**
+`Image`, `ImageInline`, `Preview`
+
+**Math**
+`MathInline`, `MathBlock`
+
+**UX and input**
+`Markdown`, `Mention`, `Emoji`, `Search`, `LinkBubble`, `LinkPicker`, `KeepSyntax`, `Keymap`, `TextDirection`, `Typography`, `CharacterCount`, `Dropcursor`, `Gapcursor`, `Placeholder`
+
+<Note>
+The `Collaboration` and `CollaborationCaret` extensions are **not** part of the `RichText` bundle. They are added separately by `Editor.vue` when a Yjs connection is active. If you use `createRichEditor()` directly you need to add them manually if you want real-time sync.
+</Note>
+
+<Tip>
+To remove a built-in extension, pass a replacement with the same `name` via the `extensions` option. Your extension will override the bundled one.
+</Tip>
+
+## Example: embedded editor with mention search
+
+```js
+import { createRichEditor } from './EditorFactory.js'
+
+const editor = createRichEditor({
+  connection: yjsProvider,
+  relativePath: '/Shared/meeting-notes.md',
+  isEmbedded: true,
+  mentionSearch: async (query) => {
+    const response = await fetch(`/ocs/v2.php/apps/text/api/v1/users?search=${encodeURIComponent(query)}`)
+    const json = await response.json()
+    return json.ocs.data
+  },
+})
+```

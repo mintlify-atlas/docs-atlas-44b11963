@@ -1,0 +1,94 @@
+---
+title: "Rich workspaces in Nextcloud Files"
+description: "Use Nextcloud Text's rich workspace feature to preview and edit README.md documents directly inside the Nextcloud Files folder view."
+---
+
+Nextcloud Text's rich workspace feature displays the contents of a folder's `README.md` file at the top of the Nextcloud Files folder view, giving you an at-a-glance preview of the folder's documentation without opening a separate editor. This page explains how rich workspaces work, how to enable or disable them, and how the feature integrates with WebDAV.
+
+## What is a rich workspace?
+
+When you browse a folder in Nextcloud Files, the rich workspace checks whether the folder contains a README file. If one is found, its content is rendered as a read-only or editable preview directly above the file list.
+
+The following filenames are recognised as workspace files (in order of precedence):
+
+- A localised `Readme.md` (translated to the user's language)
+- `Readme.md`
+- `README.md`
+- `readme.md`
+
+If none of these files exist in the folder, no workspace is shown. Users with write permission can create one from within the Files app.
+
+## Enabling and disabling as a user
+
+Individual users can toggle rich workspaces on or off from within the Nextcloud Files app:
+
+<Steps>
+  <Step title="Open Files app settings">
+    In Nextcloud Files, click the **Settings** option in the bottom-left sidebar.
+  </Step>
+  <Step title="Toggle the workspace option">
+    Find the **Show workspace** (or equivalent) toggle and switch it on or off.
+  </Step>
+</Steps>
+
+This preference is stored per user and does not affect other users on the same instance.
+
+<Warning>
+  The user toggle has no effect if the administrator has disabled workspaces globally using the `workspace_available` occ command. In that case, workspaces are off for everyone regardless of user preferences.
+</Warning>
+
+## Disabling globally as an administrator
+
+To turn off rich workspaces for all users on your Nextcloud instance, run the following command on the server:
+
+```bash
+occ config:app:set text workspace_available --value=0
+```
+
+To re-enable:
+
+```bash
+occ config:app:set text workspace_available --value=1
+```
+
+See [Admin configuration](/configuration/admin) for the full settings reference.
+
+## OCS API endpoints
+
+The Nextcloud Files client uses the Nextcloud OCS API to fetch workspace data. These endpoints are handled by `WorkspaceController`.
+
+<AccordionGroup>
+  <Accordion title="GET /apps/text/workspace — authenticated folders">
+    Returns metadata for the workspace file in the given folder path, along with the folder's permissions.
+
+    - **200**: A README was found. Response includes the file's `id`, `mimetype`, `name`, `path`, and the folder's `permissions`.
+    - **404**: No README was found, but the folder's `permissions` are still returned so the client can offer to create one.
+
+    The `path` query parameter is relative to the authenticated user's root folder and defaults to `/`.
+  </Accordion>
+  <Accordion title="GET /apps/text/public/workspace — public shared folders">
+    Returns workspace file metadata for a publicly shared folder.
+
+    Requires a `shareToken` query parameter. Password-protected shares must have been authenticated in the current session before this endpoint will return data.
+
+    - **200**: A README was found. Response includes `id`, `mimetype`, `name`, and `path`.
+    - **404**: No README was found or the share is not accessible.
+  </Accordion>
+</AccordionGroup>
+
+## WebDAV integration
+
+Nextcloud Text registers a Sabre/DAV server plugin — `OCA\Text\DAV\WorkspacePlugin` — that exposes workspace content as WebDAV properties on directory nodes. This lets WebDAV clients and the Nextcloud desktop sync client read workspace data during standard PROPFIND requests without making a separate API call.
+
+The plugin adds two custom properties to folder nodes:
+
+| Property | Namespace | Description |
+|----------|-----------|-------------|
+| `rich-workspace` | `http://nextcloud.org/ns` | The raw Markdown content of the workspace file. The value is cached per etag to avoid repeated file reads. |
+| `rich-workspace-file` | `http://nextcloud.org/ns` | The file ID of the workspace file, or an empty string if none exists. |
+
+<Note>
+  These properties are only populated when the rich workspace feature is available at the server level (`workspace_available = 1`) and enabled for the requesting user. If either condition is false, the properties are omitted from the PROPFIND response.
+</Note>
+
+The workspace content returned via the `rich-workspace` property is cached in Nextcloud's distributed cache using a key derived from the file ID and its current etag. The cache entry expires after one hour, so edits to the README are reflected in WebDAV responses within that window.

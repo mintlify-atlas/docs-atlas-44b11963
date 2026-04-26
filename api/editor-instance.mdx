@@ -1,0 +1,301 @@
+---
+title: "TextEditorEmbed instance methods"
+description: "Reference for all methods on the TextEditorEmbed instance returned by createEditor() — content, read-only, search, outline, and lifecycle."
+---
+
+When `window.OCA.Text.createEditor()` resolves, it returns a `TextEditorEmbed` instance. This page documents every method available on that instance, covering content manipulation, read-only toggling, search, outline control, attachment management, and lifecycle events.
+
+<Info>
+  The editor is already mounted and ready when the `createEditor()` promise resolves. You do not need to call `render()` unless you are remounting a previously created instance into a new DOM element.
+</Info>
+
+## Content
+
+### `setContent(content)`
+
+Set the editor's Markdown content, replacing whatever is currently loaded.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `content` | `string` | Markdown string to load into the editor. |
+
+<Warning>
+  In file mode, `setContent` overwrites the in-memory content but does not immediately persist to the server. Call `save()` afterward if you need the change written to disk.
+</Warning>
+
+Returns `this` for chaining.
+
+---
+
+### `getHTML()`
+
+Returns the current editor content as an HTML string. Useful for rendering a preview or extracting formatted output.
+
+```javascript
+const html = editor.getHTML()
+document.getElementById('preview').innerHTML = html
+```
+
+---
+
+### `insertAtCursor(content)`
+
+Insert raw HTML at the current cursor position in the editor and move focus into the newly inserted content.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `content` | `string` | HTML string to insert at the cursor. |
+
+```javascript
+editor.insertAtCursor('<strong>Important notice</strong>')
+```
+
+---
+
+### `save()`
+
+Trigger a save to the server. Only meaningful in file mode (when `fileId` and `useSession` are set). Returns a `Promise` that resolves when the save completes.
+
+```javascript
+await editor.save()
+```
+
+## Display and focus
+
+### `setReadOnly(value)`
+
+Toggle read-only mode on the editor. When `true`, the user can read but not edit the content.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `boolean` | `true` to enable read-only, `false` to allow editing. |
+
+Returns `this` for chaining.
+
+---
+
+### `updateReadonlyBarProps(value)`
+
+Update the props passed to the custom component rendered in the readonly bar (configured via the `readonlyBar` option in `createEditor`).
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `object` | New props object to pass to the readonly bar component. |
+
+---
+
+### `focus()`
+
+Move keyboard focus into the editor.
+
+```javascript
+editor.focus()
+```
+
+---
+
+### `setShowOutline(value)`
+
+Show or hide the outline (table of contents) panel. Emits a `text:toc:toggle` event on the Nextcloud event bus.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `value` | `boolean` | `true` to show the outline panel, `false` to hide it. |
+
+Returns `this` for chaining.
+
+## Search
+
+### `setSearchQuery(query, matchAll)`
+
+Set the active search query in the editor. Highlights matching text. Use `searchNext()` and `searchPrevious()` to navigate between matches.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `query` | `string` | Text to search for. |
+| `matchAll` | `boolean` | When `true`, highlight all matches simultaneously. |
+
+```javascript
+editor.setSearchQuery('introduction', true)
+```
+
+---
+
+### `searchNext()`
+
+Move the editor selection to the next search match. Has no effect if no search query is active.
+
+---
+
+### `searchPrevious()`
+
+Move the editor selection to the previous search match. Has no effect if no search query is active.
+
+## Attachments
+
+### `replaceAttachmentFilename(pageId, oldName, newName)`
+
+Rename an attachment reference throughout the document. Updates all image nodes whose `src` points to the old filename and triggers an automatic save.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pageId` | `string` | The page (attachment directory) identifier. |
+| `oldName` | `string` | Current attachment filename to replace. |
+| `newName` | `string` | New filename to use in its place. |
+
+---
+
+### `removeAttachmentReferences(pageId, name)`
+
+Remove all image nodes in the document that reference the given attachment filename, then trigger an automatic save.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `pageId` | `string` | The page (attachment directory) identifier. |
+| `name` | `string` | Attachment filename whose references should be removed. |
+
+## Lifecycle
+
+### `render(el)`
+
+Mount the editor's Vue instance into a DOM element. The element's existing content is cleared before mounting.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `el` | `Element` | Target DOM element to mount into. |
+
+Returns `this` for chaining.
+
+<Note>
+  `createEditor()` calls `render()` automatically before resolving. Only call this method if you need to remount an existing instance into a different or freshly recreated DOM element.
+</Note>
+
+---
+
+### `destroy()`
+
+Destroy the underlying Vue instance and clear the host DOM element. Call this before removing the element from the DOM to prevent memory leaks and orphaned collaboration sessions.
+
+```javascript
+// In a framework lifecycle hook, e.g. Vue's beforeUnmount / React's useEffect cleanup:
+editor.destroy()
+```
+
+## Event callbacks
+
+All callback methods subscribe to editor events and return `this` for chaining. You can call them at any time after `createEditor()` resolves — not just at initialisation.
+
+### `onCreate(callback)`
+
+Register a callback for the content-creation event. The callback receives `{ markdown }`.
+
+```javascript
+editor.onCreate(({ markdown }) => {
+  console.log('Initial content:', markdown)
+})
+```
+
+Returns `this`.
+
+---
+
+### `onLoaded(callback)`
+
+Register a callback for the editor-ready event. Called once after the editor has fully initialised.
+
+```javascript
+editor.onLoaded(() => {
+  editor.focus()
+})
+```
+
+Returns `this`.
+
+---
+
+### `onUpdate(callback)`
+
+Register a callback for content-change events. The callback receives `{ markdown }` on every edit.
+
+```javascript
+editor.onUpdate(({ markdown }) => {
+  autosave(markdown)
+})
+```
+
+Returns `this`.
+
+---
+
+### `onSearch(callback)`
+
+Register a callback that is called with search results whenever a query is active. Subscribes to the `text:editor:search-results` event bus topic.
+
+Returns `this`.
+
+---
+
+### `onTocToggle(callback)`
+
+Register a callback for outline panel toggle events. The callback receives a boolean `visible` argument.
+
+```javascript
+editor.onTocToggle((visible) => {
+  sidebar.classList.toggle('open', visible)
+})
+```
+
+Returns `this`.
+
+---
+
+### `onTocPin(callback)`
+
+Register a callback for outline panel pin/unpin events. The callback receives `(fileId, keep)`.
+
+Returns `this`.
+
+---
+
+### `onAttachmentsUpdated(callback)`
+
+Register a callback for attachment-set change events. The callback receives `{ attachmentSrcs }`, an array of current attachment source URLs. Subscribes to the `text:editor:attachments:updated` event bus topic.
+
+```javascript
+editor.onAttachmentsUpdated(({ attachmentSrcs }) => {
+  console.log('Current attachments:', attachmentSrcs)
+})
+```
+
+Returns `this`.
+
+## Debugging
+
+### `debugYjs()`
+
+Print Yjs collaboration debug data to the browser console. Use this when investigating real-time sync or conflict-resolution issues. The output includes a `clientId`-rooted object you can copy and share with the Nextcloud Text maintainers.
+
+```javascript
+editor.debugYjs()
+// Console output:
+// "Editor Yjs debug data. Copy the object below that starts with 'clientId'."
+// { clientId: ..., ... }
+```
+
+<Note>
+  The `debugYjs()` method is available on all instances. When `window._oc_debug` is set, the instance is also added to `window.OCA.Text._debug` for inspection from the browser console.
+</Note>
+
+## Method chaining
+
+Methods that return `this` can be chained:
+
+```javascript
+const editor = await window.OCA.Text.createEditor({ el, content: '' })
+
+editor
+  .setReadOnly(false)
+  .setShowOutline(true)
+  .onUpdate(({ markdown }) => save(markdown))
+  .onLoaded(() => editor.focus())
+```

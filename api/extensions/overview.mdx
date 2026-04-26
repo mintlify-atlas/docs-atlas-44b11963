@@ -1,0 +1,70 @@
+---
+title: "Tiptap extensions in Nextcloud Text"
+description: "Overview of all Tiptap extensions used in Nextcloud Text — RichText, PlainText, Markdown, Mention, CollaborationCaret, and more."
+---
+
+Nextcloud Text is built on [Tiptap](https://tiptap.dev), and every editor capability is implemented as a discrete Tiptap extension. This page lists all public extensions exported from `src/extensions/index.js` and explains how the `EditorFactory` wires them together.
+
+## Public extensions
+
+All of the following are available as named exports from `src/extensions/index.js`:
+
+| Extension | Purpose |
+|---|---|
+| `RichText` | Main WYSIWYG editor bundle — includes all nodes, marks, and collaboration support |
+| `PlainText` | Source-view bundle — renders the document as a syntax-highlighted code block |
+| `Markdown` | Markdown serialization and deserialization with custom `toMarkdown` hooks |
+| `Mention` | `@mention` support for Nextcloud users |
+| `CollaborationCaret` | Live cursor presence with colored carets and name labels |
+| `Emoji` | Emoji picker and inline emoji insertion |
+| `FocusTrap` | Accessibility focus management — traps keyboard focus within the editor |
+| `KeepSyntax` | Preserves raw Markdown syntax tokens in certain editing contexts |
+| `PlainTable` | Read-only plain table rendering (used outside of edit mode) |
+| `UserColor` | Deterministic color assignment for each collaborator's cursor |
+
+<Note>
+`RichText` and `PlainText` are mutually exclusive. Use `RichText` for the full WYSIWYG editor and `PlainText` for the raw Markdown source view. Do not combine them in the same editor instance.
+</Note>
+
+## EditorFactory
+
+The `EditorFactory` module (`src/EditorFactory.js`) is the recommended way to create a Nextcloud Text editor. It configures extensions with the correct defaults and wires them together.
+
+```js
+import { createRichEditor, createPlainEditor, loadSyntaxHighlight, serializePlainText } from './EditorFactory.js'
+```
+
+| Export | Type | Description |
+|---|---|---|
+| `createRichEditor(options)` | `function` | Creates a Tiptap editor with the full `RichText` extension bundle |
+| `createPlainEditor(options)` | `function` | Creates a Tiptap editor with the `PlainText` source-view extension |
+| `loadSyntaxHighlight(language)` | `async function` | Dynamically loads a highlight.js language definition for the plain editor |
+| `serializePlainText(doc)` | `function` | Converts a ProseMirror `doc` node to a plain-text string |
+
+<CardGroup cols={2}>
+  <Card title="RichText extension" icon="pen-to-square" href="/api/extensions/rich-text">
+    Configure the WYSIWYG editor: connection, relative path, embedded mode, and mention search.
+  </Card>
+  <Card title="PlainText extension" icon="code" href="/api/extensions/plain-text">
+    Configure the source-view editor with syntax highlighting and plain-text serialization.
+  </Card>
+</CardGroup>
+
+## Using extensions directly
+
+If you need to extend or override the built-in behaviour, you can import any extension directly:
+
+```js
+import { RichText, Markdown, Mention, CollaborationCaret } from './extensions/index.js'
+```
+
+Pass additional or replacement extensions via the `extensions` array in `createRichEditor()` or `createPlainEditor()`. Extensions whose `name` matches an existing built-in extension will replace it; all others are appended.
+
+```js
+import { createRichEditor } from './EditorFactory.js'
+import MyCustomExtension from './extensions/MyCustomExtension.js'
+
+const editor = createRichEditor({
+  extensions: [MyCustomExtension],
+})
+```

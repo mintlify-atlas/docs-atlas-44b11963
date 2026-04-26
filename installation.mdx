@@ -1,0 +1,134 @@
+---
+title: "Install Nextcloud Text"
+description: "How to enable or install the Nextcloud Text app in your Nextcloud instance, including a development environment setup with Vite HMR."
+---
+
+This page covers how to enable Nextcloud Text in an existing Nextcloud instance, the app's requirements, and how to set up a local development environment with hot module replacement (HMR) for fast iteration.
+
+## Requirements
+
+| Requirement | Version |
+|---|---|
+| Nextcloud | 34 |
+| [Viewer app](https://github.com/nextcloud/viewer) | latest main branch (development only) |
+| Node.js | ^24.0.0 |
+| npm | ^11.3.0 |
+
+<Note>
+  The Viewer app is required for some features (such as image previews inside documents). For production use, install it from the Nextcloud App Store alongside the Text app.
+</Note>
+
+## Enable in an existing Nextcloud instance
+
+Nextcloud Text ships as a default app since Nextcloud 17. It is installed automatically — you only need to enable it.
+
+<Steps>
+  <Step title="Open the Apps menu">
+    Log in as an administrator and click your profile picture in the top-right corner, then select **Apps**.
+  </Step>
+  <Step title="Find the Text app">
+    Search for **Text** in the search box, or browse the **Office & Text** category.
+  </Step>
+  <Step title="Enable the app">
+    Click **Enable** next to the Text app. The editor becomes available immediately for all users.
+  </Step>
+</Steps>
+
+After enabling, any `.md` or `.txt` file in Nextcloud Files will open in the Text editor by default.
+
+## Development setup
+
+To contribute to Nextcloud Text or test local changes, clone the app directly into your Nextcloud `apps` directory and build the JavaScript assets.
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Text repository into the `apps` folder of your Nextcloud installation:
+
+    ```bash
+    git clone https://github.com/nextcloud/text.git /path/to/nextcloud/apps/text
+    ```
+  </Step>
+  <Step title="Install dependencies and build">
+    Run `make` from inside the app folder. This installs npm dependencies and builds the JavaScript assets for production:
+
+    ```bash
+    make
+    ```
+
+    Alternatively, run the steps individually:
+
+    ```bash
+    npm ci          # install dependencies
+    npm run build   # production build
+    ```
+  </Step>
+  <Step title="Enable the app">
+    In your Nextcloud admin panel, go to **Apps** and enable the **Text** app. Or use the `occ` CLI:
+
+    ```bash
+    php occ app:enable text
+    ```
+  </Step>
+</Steps>
+
+## Build commands
+
+| Command | Description |
+|---|---|
+| `make` | Full setup: install dependencies, lint, and build for production |
+| `npm run build` | Production build only |
+| `npm run watch` | Rebuild on every file save (development) |
+| `npm run serve` | Start the Vite dev server with HMR (see below) |
+
+## Hot module replacement with Vite
+
+During development, rebuilding the entire bundle after each change is slow. The `npm run serve` command starts a Vite dev server that applies code changes instantly in the browser via hot module replacement (HMR).
+
+### Configure the nginx proxy
+
+Redirect requests from your Nextcloud server to the Vite dev server. If you use [nextcloud-docker-dev](https://github.com/juliusknorr/nextcloud-docker-dev), add the following snippet to `data/nginx/vhost.d/nextcloud.local` and restart the proxy container:
+
+```nginx
+location /apps/text/ {
+    proxy_pass http://host.docker.internal:5173/apps/text/;
+    # fallback to nextcloud server if vite serve doesn't answer
+    error_page 502 = @fallback;
+}
+location @fallback {
+    proxy_pass http://nextcloud.local;
+}
+```
+
+<Tip>
+  If your Text app is mounted at a different path (for example `/apps-extra/text/`), replace `/apps/text/` with the correct path in both the nginx config and the `BASE` variable below.
+</Tip>
+
+### Start the Vite dev server
+
+```bash
+npm run serve
+```
+
+If the app lives somewhere other than `/apps/text`, pass the `BASE` environment variable:
+
+```bash
+BASE=/apps-extra/text npm run serve
+```
+
+After the server starts, open your Nextcloud instance in the browser. Changes to frontend source files will apply automatically without a full page reload.
+
+## Admin configuration
+
+Two `occ` commands are available to configure app-wide behavior:
+
+**Disable rich workspaces in the file list:**
+
+```bash
+occ config:app:set text workspace_available --value=0
+```
+
+**Open files read-only by default:**
+
+```bash
+occ config:app:set text open_read_only_enabled --value=1
+```

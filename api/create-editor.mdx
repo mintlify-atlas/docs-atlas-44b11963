@@ -1,0 +1,233 @@
+---
+title: "createEditor() — JavaScript API"
+description: "Reference for window.OCA.Text.createEditor() — all options for embedding the Nextcloud Text editor in file-based or content mode."
+---
+
+Nextcloud Text exposes `window.OCA.Text.createEditor()` as its primary integration point, letting you embed the full rich-text editor into any Nextcloud app. This page covers every option the function accepts, the promise it returns, and complete working examples for both file-based and content-based embedding.
+
+<Info>
+  The current API version is **1.4**, exposed as `window.OCA.Text.apiVersion`. Check this value at runtime if your integration needs to guard against older Text versions.
+</Info>
+
+## Signature
+
+```javascript
+window.OCA.Text.createEditor(options): Promise<TextEditorEmbed>
+```
+
+`createEditor` is async. It dynamically imports the editor component, mounts a Vue instance into the target DOM element, and resolves with a [`TextEditorEmbed`](/api/editor-instance) instance you can use to control the editor programmatically.
+
+## Choosing an editor mode
+
+`createEditor` supports two mutually exclusive modes:
+
+- **File mode** — set `fileId` (and optionally `useSession: true`) to open a Nextcloud file over a server session. The editor reads and writes the file on the server and enables real-time collaboration.
+- **Content mode** — omit `fileId` (or set `useSession: false`) and pass `content` to embed a standalone Markdown editor with no server session.
+
+## Options
+
+### Target element
+
+<ParamField path="el" type="Element" required>
+  The DOM element to render the editor into. The element's existing content is replaced. Pass the result of `document.getElementById()`, `document.querySelector()`, or any other DOM reference.
+</ParamField>
+
+### File mode
+
+<ParamField path="fileId" type="number">
+  Nextcloud file ID for session-based file editing. When provided alongside `useSession: true`, the editor opens the file from the server and participates in real-time collaboration. Omit this option for content-based editing.
+</ParamField>
+
+<ParamField path="useSession" type="boolean" default="true">
+  Whether to establish a server session for the file. Set to `false` to embed without a session even when `fileId` is supplied. Effective only when `fileId` is also set.
+</ParamField>
+
+<ParamField path="filePath" type="string">
+  Relative path to the file within the Nextcloud instance (e.g. `"/Readme.md"`). Used alongside `fileId` to identify the file.
+</ParamField>
+
+<ParamField path="shareToken" type="string" default="null">
+  Share token for accessing a publicly shared or link-shared file. Required when embedding the editor in a public share context.
+</ParamField>
+
+### Content
+
+<ParamField path="content" type="string" default="''">
+  Initial Markdown content for the editor. Used when not in file mode (i.e. no `fileId` + session). Changes to this value after mount should be applied via [`setContent()`](/api/editor-instance#setcontent).
+</ParamField>
+
+### Behavior
+
+<ParamField path="readOnly" type="boolean" default="false">
+  Start the editor in read-only mode. The user can read but not modify the content. Toggle this at runtime with [`setReadOnly()`](/api/editor-instance#setreadonly).
+</ParamField>
+
+<ParamField path="autofocus" type="boolean" default="true">
+  Automatically focus the editor after it mounts. Set to `false` when embedding in a context where immediate focus would be disruptive.
+</ParamField>
+
+<ParamField path="readonlyBar" type="object">
+  Custom Vue component to render in the readonly bar area. Provide an object with `component` (a Vue component definition) and `props` (props to pass to that component).
+
+  ```javascript
+  readonlyBar: {
+    component: MyToolbarComponent,
+    props: { label: 'Read-only view' },
+  }
+  ```
+
+  Update props at runtime with [`updateReadonlyBarProps()`](/api/editor-instance#updatereadonlybarprops).
+</ParamField>
+
+<ParamField path="menubarLinkCustomAction" type="function">
+  Custom handler invoked when the user activates the link action in the menu bar. Use this to replace the default link dialog with your own UI.
+</ParamField>
+
+### Mention hooks
+
+<ParamField path="onMentionSearch" type="function">
+  Called when the user types a `@mention` query. Must return a `Promise` that resolves to an object mapping user IDs to display labels.
+
+  ```javascript
+  onMentionSearch: (query) => Promise<{ [id]: label }>
+  ```
+</ParamField>
+
+<ParamField path="onMentionInsert" type="function">
+  Called when the user inserts a mention from the suggestion list. Use this to trigger any side-effects (e.g. sending a notification preview).
+</ParamField>
+
+### Link handling
+
+<ParamField path="openLinkHandler" type="function">
+  Custom handler for link clicks in the editor. Replaces the default `openLink` behaviour. Receives the link URL as its argument.
+</ParamField>
+
+### File attachment
+
+<ParamField path="onFileInsert" type="function">
+  Handler invoked when the user triggers the file attachment prompt (the attachment button in the toolbar). Use this to open a custom file picker and return the selected file.
+</ParamField>
+
+### Search
+
+<ParamField path="onSearch" type="function">
+  Called with search results when a search query is active. Results are also accessible by subscribing to the `text:editor:search-results` event bus topic.
+</ParamField>
+
+### Event callbacks
+
+<Note>
+  All callback options below can also be registered after `createEditor` resolves by calling the equivalent method on the returned `TextEditorEmbed` instance (e.g. `editor.onCreate(...)`). Registering via options is a convenience shortcut that wires the callbacks before the editor first renders.
+</Note>
+
+<ParamField path="onCreate" type="function" default="({ markdown }) => {}">
+  Called when the editor creates content. Receives an object with a `markdown` property containing the initial document as a Markdown string.
+
+  ```javascript
+  onCreate: ({ markdown }) => {
+    console.log('Created:', markdown)
+  }
+  ```
+</ParamField>
+
+<ParamField path="onLoaded" type="function" default="() => {}">
+  Called when the editor has fully initialised and is ready for interaction. Equivalent to listening for the `ready` event on the underlying Vue instance.
+</ParamField>
+
+<ParamField path="onUpdate" type="function" default="({ markdown }) => {}">
+  Called every time the document content changes. Receives an object with a `markdown` property.
+
+  ```javascript
+  onUpdate: ({ markdown }) => {
+    console.log('Content updated:', markdown)
+  }
+  ```
+</ParamField>
+
+<ParamField path="onTocToggle" type="function" default="(visible) => {}">
+  Called when the outline (table of contents) panel is toggled. Receives a boolean indicating whether the panel is now visible.
+</ParamField>
+
+<ParamField path="onTocPin" type="function" default="(fileId, keep) => {}">
+  Called when the outline panel is pinned or unpinned. Receives the file ID and a `keep` boolean.
+</ParamField>
+
+<ParamField path="onAttachmentsUpdated" type="function" default="({ attachmentSrcs }) => {}">
+  Called when the set of attachments in the document changes. Receives an object with an `attachmentSrcs` array listing current attachment source URLs.
+</ParamField>
+
+## Return value
+
+`createEditor` returns a `Promise` that resolves to a `TextEditorEmbed` instance. The editor is already mounted and ready when the promise resolves — you do not need to call `render()` manually.
+
+See [TextEditorEmbed instance methods](/api/editor-instance) for the full API of the returned object.
+
+## Examples
+
+### File-based editor
+
+Open a specific Nextcloud file for collaborative editing. The editor reads the current file content from the server and keeps it in sync.
+
+```javascript file-based editor
+// Dispatch the LoadEditor event from PHP first, then:
+
+if (!window.OCA?.Text?.createEditor) {
+  console.warn('Nextcloud Text is not available')
+  return
+}
+
+window.OCA.Text.createEditor({
+  el: document.getElementById('my-editor-div'),
+  fileId: 12345,
+  filePath: '/Readme.md',
+  onLoaded: () => {
+    console.log('Editor is ready')
+  },
+  onUpdate: ({ markdown }) => {
+    console.log('Content changed')
+  },
+}).then((editor) => {
+  // The editor is mounted and ready.
+
+  // Programmatically set content (overwrites the file's content in the editor):
+  editor.setContent('new content')
+
+  // Switch to read-only:
+  editor.setReadOnly(true)
+
+  // Insert HTML at the cursor:
+  editor.insertAtCursor('<h1>Heading</h1>')
+
+  // Always destroy when removing the DOM element:
+  editor.destroy()
+})
+```
+
+### Content-based editor
+
+Embed a standalone Markdown editor with no server session. Ideal for forms, comment boxes, or any context where you manage persistence yourself.
+
+```javascript content-based editor
+window.OCA.Text.createEditor({
+  el: document.getElementById('my-editor-div'),
+  content: '# Hello\n\nStart writing here.',
+  onUpdate: ({ markdown }) => {
+    // Persist the Markdown string yourself:
+    saveToDatabase(markdown)
+  },
+}).then((editor) => {
+  // Override content later:
+  editor.setContent('# Updated content')
+
+  editor.setReadOnly(true)
+  editor.insertAtCursor('<h1>Heading</h1>')
+
+  // Clean up:
+  editor.destroy()
+})
+```
+
+<Tip>
+  Always call `editor.destroy()` before removing the host DOM element. Failing to do so leaks the Vue instance and any active collaboration session.
+</Tip>

@@ -1,0 +1,131 @@
+{
+  "projectType": "frontend",
+  "projectName": "Nextcloud Text",
+  "projectDescription": "A collaborative rich-text and Markdown document editor for Nextcloud, built on Tiptap and ProseMirror with real-time multi-user editing via Yjs.",
+  "theme": "palm",
+  "primaryColor": "#0ea4be",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Using the Editor",
+            "pages": [
+              "editor/overview",
+              "editor/formatting",
+              "editor/math",
+              "editor/tables",
+              "editor/attachments"
+            ]
+          },
+          {
+            "group": "Collaboration",
+            "pages": [
+              "collaboration/real-time",
+              "collaboration/sessions",
+              "collaboration/mentions"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/admin",
+              "configuration/workspace"
+            ]
+          },
+          {
+            "group": "Integration",
+            "pages": [
+              "integration/embed-editor",
+              "integration/php-events",
+              "integration/direct-editing",
+              "integration/mime-types"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Developer Reference",
+        "groups": [
+          {
+            "group": "JavaScript API",
+            "pages": [
+              "api/create-editor",
+              "api/editor-instance",
+              "api/create-table"
+            ]
+          },
+          {
+            "group": "Extensions",
+            "pages": [
+              "api/extensions/overview",
+              "api/extensions/rich-text",
+              "api/extensions/plain-text"
+            ]
+          },
+          {
+            "group": "Backend API",
+            "pages": [
+              "api/backend/session",
+              "api/backend/workspace",
+              "api/backend/attachments"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Real-time collaborative editing powered by Yjs CRDT",
+    "Rich-text WYSIWYG editor built on Tiptap and ProseMirror",
+    "Files saved as Markdown for interoperability",
+    "LaTeX math rendering via KaTeX (inline and block)",
+    "Syntax-highlighted code blocks via highlight.js",
+    "Mermaid diagram support",
+    "Table editing with rich table extension",
+    "Image and file attachment support",
+    "User @mentions with search",
+    "Embeddable editor API for third-party Nextcloud apps",
+    "Rich workspace preview in Nextcloud Files",
+    "Public sharing and guest collaboration"
+  ],
+  "publicApiSurface": [
+    "window.OCA.Text.createEditor(options) → TextEditorEmbed",
+    "window.OCA.Text.createTable(options) → TextEditorEmbed",
+    "TextEditorEmbed#setContent(content)",
+    "TextEditorEmbed#getHTML()",
+    "TextEditorEmbed#setReadOnly(value)",
+    "TextEditorEmbed#insertAtCursor(content)",
+    "TextEditorEmbed#save()",
+    "TextEditorEmbed#destroy()",
+    "TextEditorEmbed#setShowOutline(value)",
+    "TextEditorEmbed#setSearchQuery(query, matchAll)",
+    "TextEditorEmbed#onCreate(callback)",
+    "TextEditorEmbed#onUpdate(callback)",
+    "TextEditorEmbed#onLoaded(callback)",
+    "TextEditorEmbed#onSearch(callback)",
+    "TextEditorEmbed#onTocToggle(callback)",
+    "TextEditorEmbed#onAttachmentsUpdated(callback)",
+    "PHP Event: OCA\\Text\\Event\\LoadEditor",
+    "OCS API: GET /apps/text/workspace",
+    "REST API: PUT /apps/text/session/{documentId}/create",
+    "REST API: POST /apps/text/session/{documentId}/sync",
+    "REST API: POST /apps/text/session/{documentId}/push",
+    "REST API: POST /apps/text/session/{documentId}/save",
+    "REST API: POST /apps/text/session/{documentId}/close",
+    "REST API: POST /apps/text/attachments",
+    "REST API: GET /apps/text/image",
+    "REST API: POST /apps/text/ai/tag/{fileId}"
+  ]
+}

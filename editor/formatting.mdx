@@ -1,0 +1,163 @@
+---
+title: "Text formatting and Markdown syntax"
+description: "Complete formatting reference for Nextcloud Text — headings, bold, italic, lists, blockquotes, code blocks, and Markdown shortcuts."
+---
+
+Nextcloud Text supports rich-text formatting through both the toolbar and Markdown input rules. Every formatting choice is stored as standard Markdown in the underlying file. This page lists every supported format, the Markdown syntax that produces it, and the keyboard shortcut where one exists.
+
+<Info>
+Markdown input rules apply while you type. For example, typing `**` around a word bolds it immediately. You can undo an automatically applied rule by pressing `Backspace` right after it triggers.
+</Info>
+
+## Headings
+
+Six heading levels are supported (H1–H6). Use the **Headings** dropdown in the toolbar or type the ATX-style Markdown prefix followed by a space.
+
+| Level | Toolbar shortcut | Markdown syntax |
+|---|---|---|
+| Heading 1 | `Ctrl+Shift+1` | `# Heading text` |
+| Heading 2 | `Ctrl+Shift+2` | `## Heading text` |
+| Heading 3 | `Ctrl+Shift+3` | `### Heading text` |
+| Heading 4 | `Ctrl+Shift+4` | `#### Heading text` |
+| Heading 5 | `Ctrl+Shift+5` | `##### Heading text` |
+| Heading 6 | `Ctrl+Shift+6` | `###### Heading text` |
+
+Each heading automatically receives an anchor link, so you can link directly to sections within the document.
+
+## Inline text formatting
+
+| Format | Keyboard shortcut | Markdown syntax |
+|---|---|---|
+| Bold | `Ctrl+B` | `**bold text**` |
+| Italic | `Ctrl+I` | `*italic text*` |
+| Underline | `Ctrl+U` | `__underlined text__` |
+| Strikethrough | `Ctrl+Shift+S` | `~~strikethrough text~~` |
+| Highlight | `Ctrl+Shift+H` | `==highlighted text==` |
+| Inline code | — | `` `code` `` |
+
+<Note>
+Underline is serialized as `__...__` in Markdown. Some Markdown renderers outside Nextcloud Text interpret double underscores as bold; be aware when sharing files with other tools.
+</Note>
+
+### Inline code
+
+Wrap text in single backticks to format it as inline code. Inline code disables other marks inside it — bold, italic, and similar formatting have no effect within a code span.
+
+```markdown
+Use `npm install` to install dependencies.
+```
+
+## Links
+
+Insert a link with `Ctrl+K` or the link button in the toolbar. You can also type Markdown link syntax directly:
+
+```markdown
+[link text](https://example.com)
+```
+
+When you click a link in edit mode, a bubble appears letting you open, edit, or remove the link. Links to `http://` or `https://` URLs open automatically on click.
+
+## Lists
+
+### Unordered list
+
+**Keyboard shortcut:** `Ctrl+Shift+8`
+
+```markdown
+- First item
+- Second item
+- Third item
+```
+
+### Ordered list
+
+**Keyboard shortcut:** `Ctrl+Shift+7`
+
+```markdown
+1. First item
+2. Second item
+3. Third item
+```
+
+### To-do list (task list)
+
+**Keyboard shortcut:** `Ctrl+Shift+9`
+
+```markdown
+- [ ] Unchecked task
+- [x] Completed task
+```
+
+Checkboxes are interactive in edit mode — click a checkbox to toggle it between checked and unchecked.
+
+### Indenting list items
+
+Press `Tab` to increase indentation and `Shift+Tab` to decrease it. Nested lists support multiple levels.
+
+## Blockquotes
+
+**Keyboard shortcut:** `Ctrl+Shift+B`
+
+```markdown
+> This is a blockquote.
+> It can span multiple lines.
+```
+
+## Code blocks
+
+**Keyboard shortcut:** `Ctrl+Alt+C`
+
+Fenced code blocks support syntax highlighting. Specify the language immediately after the opening fence:
+
+````markdown
+```javascript
+const greeting = 'Hello, world!'
+console.log(greeting)
+```
+````
+
+````markdown
+```python
+greeting = "Hello, world!"
+print(greeting)
+```
+````
+
+If no language is specified, the block is treated as plain text. Syntax highlighting is powered by [lowlight](https://github.com/wooorm/lowlight), which supports all common languages.
+
+## Callouts
+
+Callouts are highlighted blocks used to draw attention to important information. Insert them from the **Blocks** menu in the toolbar. Four types are available:
+
+| Type | Markdown syntax |
+|---|---|
+| Info | `::: info` ... `:::` |
+| Success | `::: success` ... `:::` |
+| Warning | `::: warn` ... `:::` |
+| Danger | `::: error` ... `:::` |
+
+```markdown
+::: info
+This is an informational callout.
+:::
+```
+
+## Horizontal rule
+
+Type `---` on a blank line and press Enter to insert a horizontal rule.
+
+```markdown
+---
+```
+
+## Details / summary (collapsible section)
+
+Use the **Details** button in the toolbar to insert a collapsible section. The first line becomes the summary (the clickable label), and subsequent content is the hidden body.
+
+## Emoji
+
+Type `:` followed by an emoji name to trigger the emoji picker. On desktop, the toolbar also contains an emoji picker button.
+
+```markdown
+:smile: :rocket: :white_check_mark:
+```

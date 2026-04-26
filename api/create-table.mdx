@@ -1,0 +1,137 @@
+---
+title: "createTable() — table editor API"
+description: "Reference for window.OCA.Text.createTable() — embed a standalone table editor with Markdown pipe table output and no session or toolbar overhead."
+---
+
+Nextcloud Text provides `window.OCA.Text.createTable()` for embedding a focused, standalone table editor that reads and writes Markdown pipe-table syntax. Unlike `createEditor()`, this function renders only the table editing surface (`PlainTableContentEditor`) with no toolbar, file session, or collaboration overhead.
+
+<Info>
+  `createTable` returns the same `TextEditorEmbed` type as `createEditor`. See [TextEditorEmbed instance methods](/api/editor-instance) for the full instance API. Note that file-session methods (such as `save()`) and session-specific callbacks are not meaningful in this context.
+</Info>
+
+## Signature
+
+```javascript
+window.OCA.Text.createTable(options): Promise<TextEditorEmbed>
+```
+
+`createTable` is async. It dynamically imports `PlainTableContentEditor.vue`, mounts a Vue instance into the target element, wires up the provided callbacks, and resolves with a `TextEditorEmbed` instance.
+
+## Options
+
+<ParamField path="el" type="Element" required>
+  The DOM element to render the table editor into. Existing content in the element is replaced on mount.
+
+  ```javascript
+  el: document.getElementById('table-editor')
+  ```
+</ParamField>
+
+<ParamField path="content" type="string" default="''">
+  Initial Markdown pipe-table content. The editor will parse and render this string as a table on mount.
+
+  ```javascript
+  content: '| Name | Score |\n|------|-------|\n| Alice | 42 |'
+  ```
+</ParamField>
+
+<ParamField path="readOnly" type="boolean" default="false">
+  Start the table editor in read-only mode. The user can view the table but cannot modify it. Toggle this at runtime with [`setReadOnly()`](/api/editor-instance#setreadonly).
+</ParamField>
+
+<ParamField path="autofocus" type="boolean" default="true">
+  Automatically focus the table editor after it mounts. Set to `false` if immediate focus would be disruptive in your layout.
+</ParamField>
+
+<ParamField path="onCreate" type="function" default="({ markdown }) => {}">
+  Called when the editor creates content. Receives `{ markdown }` with the initial Markdown table string.
+
+  ```javascript
+  onCreate: ({ markdown }) => {
+    console.log('Table created:', markdown)
+  }
+  ```
+</ParamField>
+
+<ParamField path="onLoaded" type="function" default="() => {}">
+  Called once when the table editor has fully initialised and is ready for interaction.
+
+  ```javascript
+  onLoaded: () => {
+    console.log('Table editor ready')
+  }
+  ```
+</ParamField>
+
+<ParamField path="onUpdate" type="function" default="({ markdown }) => {}">
+  Called every time the table content changes. Receives `{ markdown }` with the current Markdown pipe-table string.
+
+  ```javascript
+  onUpdate: ({ markdown }) => {
+    persistTable(markdown)
+  }
+  ```
+</ParamField>
+
+## Return value
+
+`createTable` returns a `Promise` that resolves to a `TextEditorEmbed` instance. The editor is already mounted when the promise resolves.
+
+The following `TextEditorEmbed` methods are relevant for a table editor:
+
+| Method | Description |
+|--------|-------------|
+| `setContent(content)` | Replace the table content with a new Markdown string. |
+| `getHTML()` | Return the current table as an HTML string. |
+| `setReadOnly(value)` | Toggle read-only mode. |
+| `insertAtCursor(content)` | Insert HTML at the current cursor position within the table. |
+| `focus()` | Move keyboard focus into the table editor. |
+| `destroy()` | Unmount the Vue instance and clear the DOM element. |
+| `onCreate(callback)` | Register a content-creation callback. |
+| `onLoaded(callback)` | Register an editor-ready callback. |
+| `onUpdate(callback)` | Register a content-change callback. |
+
+## Example
+
+```javascript table editor embed
+if (!window.OCA?.Text?.createTable) {
+  console.warn('Nextcloud Text is not available')
+  return
+}
+
+window.OCA.Text.createTable({
+  el: document.getElementById('table-editor'),
+  content: '| Column A | Column B |\n|----------|----------|\n| Value 1  | Value 2  |',
+  onLoaded: () => {
+    console.log('Table editor ready')
+  },
+  onUpdate: ({ markdown }) => {
+    // Persist or sync the Markdown pipe-table string:
+    saveTable(markdown)
+  },
+}).then((editor) => {
+  // Programmatically replace the table content:
+  editor.setContent('| Name | Age |\n|------|-----|\n| Bob  | 30  |')
+
+  // Switch to read-only:
+  editor.setReadOnly(true)
+
+  // Always clean up before removing the DOM element:
+  editor.destroy()
+})
+```
+
+<Tip>
+  Always call `editor.destroy()` before removing the host element from the DOM to avoid memory leaks.
+</Tip>
+
+## Difference from `createEditor`
+
+`createTable` renders `PlainTableContentEditor.vue` instead of the full `Editor.vue` or `MarkdownContentEditor.vue`. This means:
+
+- No file session or real-time collaboration support.
+- No toolbar, mentions, attachments, or outline panel.
+- Callbacks are limited to `onCreate`, `onLoaded`, and `onUpdate`.
+- The output is always a Markdown pipe table.
+
+Use `createTable` when you only need to let users create or edit tabular data and want to avoid the overhead of the full editor. Use [`createEditor`](/api/create-editor) when you need the full Markdown editing experience.

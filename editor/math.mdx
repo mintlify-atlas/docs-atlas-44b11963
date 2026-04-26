@@ -1,0 +1,123 @@
+---
+title: "Mathematical formulas with LaTeX"
+description: "Write and render LaTeX math formulas in Nextcloud Text using KaTeX — inline math with $...$, display blocks with $$...$$, and toolbar insertion."
+---
+
+Nextcloud Text renders mathematical formulas written in LaTeX syntax using [KaTeX](https://katex.org). You can write inline expressions that flow with your text, or display-mode blocks that appear centered on their own line. Formulas are stored as `$...$` and `$$...$$` Markdown in the underlying file.
+
+## Inline math
+
+Wrap your LaTeX expression in single dollar signs to render it inline within a paragraph.
+
+```markdown
+The most famous equation in physics is $E=mc^2$.
+```
+
+The formula renders immediately as you type and is displayed in the flow of the surrounding text.
+
+### Insert inline math from the toolbar
+
+<Steps>
+  <Step title="Select text (optional)">
+    If you want to convert existing text to a formula, select it first. The selected text will be used as the initial LaTeX content.
+  </Step>
+  <Step title="Open the Blocks menu">
+    Click the **Blocks** button in the toolbar (the code brackets icon).
+  </Step>
+  <Step title="Choose Inline math">
+    Click **Inline math**. If you had text selected, it becomes the formula content. If nothing was selected, an empty formula is inserted and the edit dialog opens automatically.
+  </Step>
+  <Step title="Enter your LaTeX">
+    Type your LaTeX expression in the dialog and confirm to render it.
+  </Step>
+</Steps>
+
+## Display math (block)
+
+Wrap your expression in double dollar signs on separate lines to render it as a centered display block.
+
+```markdown
+$$
+\sum_{i=1}^n i = \frac{n(n+1)}{2}
+$$
+```
+
+The formula appears on its own line, centered, at a larger size than inline math.
+
+### Multi-line formulas
+
+When typing a display math formula directly in the editor, use `Shift+Enter` (soft line break) to add lines within the formula block without closing it.
+
+```markdown
+$$
+\begin{pmatrix}
+a & b \\
+c & d
+\end{pmatrix}
+$$
+```
+
+<Warning>
+Pressing `Enter` (hard return) while inside a math block will close the block. Use `Shift+Enter` to insert a line break within the formula.
+</Warning>
+
+### Insert block math from the toolbar
+
+<Steps>
+  <Step title="Select text (optional)">
+    Optionally select text to use as the initial LaTeX content.
+  </Step>
+  <Step title="Open the Blocks menu">
+    Click the **Blocks** button in the toolbar.
+  </Step>
+  <Step title="Choose Block math">
+    Click **Block math**. The edit dialog opens so you can enter your LaTeX expression.
+  </Step>
+  <Step title="Save">
+    Confirm the dialog to render the formula.
+  </Step>
+</Steps>
+
+## Editing an existing formula
+
+Click any rendered formula to open the edit dialog. Make your changes and save to re-render.
+
+<Tip>
+If you close the dialog without entering any LaTeX, the empty formula node is removed automatically.
+</Tip>
+
+## Pasting Markdown with math
+
+Pasting Markdown text that contains `$...$` or `$$...$$` syntax renders the formulas automatically. No extra steps are required — the editor's Markdown parser recognises LaTeX delimiters on paste.
+
+## Examples
+
+### Common inline expressions
+
+```markdown
+Pythagorean theorem: $a^2 + b^2 = c^2$
+
+Euler's identity: $e^{i\pi} + 1 = 0$
+
+The quadratic formula: $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
+```
+
+### Common display blocks
+
+```markdown
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
+```
+
+```markdown
+$$
+\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^n = e
+$$
+```
+
+```markdown
+$$
+\mathbf{F} = m\mathbf{a}
+$$
+```

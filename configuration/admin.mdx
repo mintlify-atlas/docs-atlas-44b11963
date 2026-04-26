@@ -1,0 +1,96 @@
+---
+title: "Admin configuration for Nextcloud Text"
+description: "Configure Nextcloud Text as a Nextcloud administrator — control workspace availability, read-only defaults, and app settings via occ commands."
+---
+
+Nextcloud Text exposes server-side configuration options that Nextcloud administrators can control via `occ` commands and the Nextcloud administration settings page. This page covers the available settings, what each one does, and the automatic cleanup job that runs in the background.
+
+## Administration settings page
+
+Nextcloud Text integrates with the Nextcloud administration panel. You can find its settings under **Settings** → **Administration** in your Nextcloud instance. This page surfaces the same options described below through a graphical interface.
+
+## occ commands
+
+The `occ` command-line tool is Nextcloud's server management interface. The commands below must be run on the server by a system administrator with access to the Nextcloud installation.
+
+### Disable rich workspaces globally
+
+Rich workspaces show a preview of a folder's `README.md` at the top of the file list. By default this feature is enabled for all users. To turn it off server-wide, run:
+
+```bash
+occ config:app:set text workspace_available --value=0
+```
+
+To re-enable it:
+
+```bash
+occ config:app:set text workspace_available --value=1
+```
+
+<Note>
+  Setting `workspace_available` to `0` disables the feature globally, regardless of individual user preferences. Users can toggle their own workspace visibility only when the admin has left the feature available.
+</Note>
+
+### Enable read-only mode by default
+
+By default, Nextcloud Text opens files in edit mode. You can configure the app to open files in read-only mode instead, so users must explicitly click to edit:
+
+```bash
+occ config:app:set text open_read_only_enabled --value=1
+```
+
+To revert to the default edit-on-open behaviour:
+
+```bash
+occ config:app:set text open_read_only_enabled --value=0
+```
+
+<Info>
+  This setting is global — it applies to all users on the instance. Individual users cannot override it from their own preferences.
+</Info>
+
+## Settings reference
+
+<AccordionGroup>
+  <Accordion title="workspace_available">
+    Controls whether the rich workspace feature is available across the entire Nextcloud instance.
+
+    | Value | Behaviour |
+    |-------|-----------|
+    | `1` (default) | Rich workspaces are available; users can toggle their own preference |
+    | `0` | Rich workspaces are disabled for all users |
+
+    ```bash
+    occ config:app:set text workspace_available --value=0
+    ```
+  </Accordion>
+  <Accordion title="open_read_only_enabled">
+    Controls whether files open in read-only mode by default.
+
+    | Value | Behaviour |
+    |-------|-----------|
+    | `0` (default) | Files open in edit mode |
+    | `1` | Files open in read-only mode; users must click to edit |
+
+    ```bash
+    occ config:app:set text open_read_only_enabled --value=1
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Cleanup background job
+
+Nextcloud Text registers a background job — `OCA\Text\Cron\Cleanup` — that runs automatically on the Nextcloud cron schedule. You do not need to configure or trigger it manually.
+
+The cleanup job performs the following tasks each time it runs:
+
+- Resets documents that have no active editing sessions, so stale collaboration state does not accumulate
+- Cleans up attachment references for those documents
+- Removes inactive sessions that have no pending steps
+- Removes old sessions that have exceeded their maximum lifetime
+- Removes orphaned steps left behind by closed sessions
+- Deletes obsolete temporary document folders created during editing
+
+<Tip>
+  The cleanup interval matches the session validity window defined by `SessionService::SESSION_VALID_TIME`. No manual scheduling is required beyond keeping Nextcloud's background jobs running (via system cron or the web-based cron).
+</Tip>

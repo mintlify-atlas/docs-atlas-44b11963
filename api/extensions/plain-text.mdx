@@ -1,0 +1,125 @@
+---
+title: "PlainText extension and source view"
+description: "Use the PlainText Tiptap extension for raw Markdown source editing in Nextcloud Text, with syntax highlighting powered by lowlight and highlight.js."
+---
+
+Nextcloud Text includes a source-view mode powered by the `PlainText` extension. It renders the entire document as a single syntax-highlighted code block, making it suitable for users who prefer to edit raw Markdown. This page covers the `PlainText` extension options and the `createPlainEditor()` factory function.
+
+## createPlainEditor()
+
+The recommended way to create a plain-text (source-view) editor instance. Accepts an optional options object and returns a configured Tiptap `Editor`.
+
+```js
+import { createPlainEditor } from './EditorFactory.js'
+
+const editor = createPlainEditor({
+  language: 'markdown',  // syntax highlighting language (default: 'plaintext')
+  extensions: [],        // additional Tiptap extensions to include
+})
+```
+
+### Parameters
+
+<ParamField path="language" type="string" default="plaintext">
+  The highlight.js language identifier to use for syntax highlighting. Defaults to `'plaintext'` (no highlighting). Common values include `'markdown'`, `'javascript'`, `'python'`, and any language supported by highlight.js.
+
+  Use `loadSyntaxHighlight(language)` first to ensure the language definition is registered before creating the editor.
+</ParamField>
+
+<ParamField path="extensions" type="Extension[]" default="[]">
+  Additional Tiptap extensions to append to the plain-text bundle. Because `PlainText` uses a minimal document model (`PlainTextDocument`), only extensions compatible with a single top-level code block will work correctly.
+</ParamField>
+
+## loadSyntaxHighlight()
+
+Dynamically loads a highlight.js language definition and registers it with the shared `lowlight` instance used by `createPlainEditor()`. Call this before creating an editor when you need a specific language.
+
+```js
+import { loadSyntaxHighlight, createPlainEditor } from './EditorFactory.js'
+
+await loadSyntaxHighlight('markdown')
+
+const editor = createPlainEditor({ language: 'markdown' })
+```
+
+<Note>
+`loadSyntaxHighlight()` is a no-op if the language is already registered. It is safe to call multiple times for the same language.
+</Note>
+
+## serializePlainText()
+
+Converts a ProseMirror `doc` node to a plain-text string by reading its `textContent`.
+
+```js
+import { serializePlainText } from './EditorFactory.js'
+
+const plainText = serializePlainText(editor.state.doc)
+```
+
+<ParamField path="doc" type="Node" required>
+  A ProseMirror `Node` instance, typically `editor.state.doc`. The function returns the concatenated text content of all leaf nodes.
+</ParamField>
+
+## PlainText.configure()
+
+You can also configure the extension directly:
+
+```js
+import PlainText from './extensions/PlainText.js'
+import { createLowlight } from 'lowlight'
+
+const lowlight = createLowlight()
+
+const plainTextExtension = PlainText.configure({
+  lowlight,
+  defaultLanguage: 'markdown',
+})
+```
+
+The options defined in `src/extensions/PlainText.js`:
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `lowlight` | `LowlightInstance \| undefined` | `undefined` | A `lowlight` instance with language definitions registered. Passed through to `CodeBlockPlainText`. |
+| `defaultLanguage` | `string` | `'plaintext'` | The default language to use for syntax highlighting when no language is explicitly set. |
+
+## Bundled sub-extensions
+
+`PlainText` composes a minimal set of extensions designed for the source-view context:
+
+| Extension | Description |
+|---|---|
+| `PlainTextDocument` | A simplified document schema with a single top-level code block |
+| `CodeBlockPlainText` | The code block node that renders the document with lowlight syntax highlighting, configured with `exitOnTripleEnter: false` |
+| `Text` | The core Tiptap text node |
+| `Keymap` | Shared keyboard shortcuts |
+
+<Warning>
+`PlainText` uses `PlainTextDocument` instead of the standard `Document` node. This means it is **not compatible with `RichText`**. You must create a separate editor instance for the source view.
+</Warning>
+
+## EditorFactory exports
+
+All public exports from `src/EditorFactory.js`:
+
+| Export | Description |
+|---|---|
+| `createRichEditor(options?)` | Creates a WYSIWYG editor with the full `RichText` bundle |
+| `createPlainEditor(options?)` | Creates a source-view editor with the `PlainText` bundle |
+| `loadSyntaxHighlight(language)` | Async — loads a highlight.js language definition |
+| `serializePlainText(doc)` | Converts a ProseMirror doc to plain text |
+
+## Example: source-view toggle
+
+A common pattern is to maintain two editor instances and mount the appropriate one depending on the current view mode:
+
+```js
+import { createRichEditor, createPlainEditor, loadSyntaxHighlight } from './EditorFactory.js'
+
+// Create the WYSIWYG editor
+const richEditor = createRichEditor({ connection: yjsProvider })
+
+// Pre-load the language definition, then create the source-view editor
+await loadSyntaxHighlight('markdown')
+const plainEditor = createPlainEditor({ language: 'markdown' })
+```

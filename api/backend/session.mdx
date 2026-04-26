@@ -1,0 +1,211 @@
+---
+title: "Session REST API endpoints"
+description: "REST API reference for Nextcloud Text session management — create, sync, push, save, and close collaborative document editing sessions."
+---
+
+Nextcloud Text manages document editing through server-side sessions. Each open document has a session that tracks connected users, document steps (OT operations), and the current document state. This page documents all session endpoints defined in `appinfo/routes.php` and implemented in `lib/Controller/SessionController.php`.
+
+<Info>
+All session endpoints are Nextcloud app routes. The base URL for authenticated users is `/index.php/apps/text` (or `/apps/text` when `mod_rewrite` is enabled). Public share endpoints use the same base URL with a `/public` prefix.
+</Info>
+
+## Authentication
+
+Authenticated endpoints require a valid Nextcloud session cookie or an OCS API token. Public endpoints (`/public/...`) are accessible with a valid share token passed as a request parameter.
+
+---
+
+## Authenticated session endpoints
+
+### Create session
+
+<CodeGroup>
+
+```http Request
+PUT /index.php/apps/text/session/{documentId}/create
+```
+
+</CodeGroup>
+
+Opens a new editing session for a document. Returns a session token and the current document state needed to initialize the editor.
+
+<ParamField path="documentId" type="integer" required>
+  The Nextcloud file ID of the document to open.
+</ParamField>
+
+<ParamField body="fileId" type="integer">
+  Alternative to the path parameter. The Nextcloud file ID.
+</ParamField>
+
+<ParamField body="file" type="string">
+  Path to the file relative to the user's root folder. Used as an alternative to `fileId`.
+</ParamField>
+
+<ParamField body="baseVersionEtag" type="string">
+  The ETag of the base version the client is starting from. Used for conflict detection.
+</ParamField>
+
+---
+
+### Sync steps
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/session/{documentId}/sync
+```
+
+</CodeGroup>
+
+Pulls new document steps from the server that the client has not yet applied. Call this regularly to stay in sync with other editors.
+
+<ParamField path="documentId" type="integer" required>
+  The file ID of the document.
+</ParamField>
+
+<ParamField body="version" type="integer" default="0">
+  The last step version the client has applied. The server returns all steps after this version.
+</ParamField>
+
+<Note>
+This endpoint requires `X-Document-Base-Version-Etag` and `X-Document-Session-Id` / `X-Document-Session-Token` request headers, set by the `#[RequireDocumentBaseVersionEtag]` and `#[RequireDocumentSession]` middleware.
+</Note>
+
+---
+
+### Push steps
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/session/{documentId}/push
+```
+
+</CodeGroup>
+
+Pushes local document changes to the server as a list of ProseMirror steps.
+
+<ParamField path="documentId" type="integer" required>
+  The file ID of the document.
+</ParamField>
+
+<ParamField body="version" type="integer" required>
+  The document version the steps were based on.
+</ParamField>
+
+<ParamField body="steps" type="object[]" required>
+  An array of serialized ProseMirror step objects to apply.
+</ParamField>
+
+<ParamField body="awareness" type="string" required>
+  A serialized Yjs awareness update representing the local user's cursor position and presence data.
+</ParamField>
+
+<ParamField body="recoveryAttempt" type="integer">
+  Incremented by the client on each retry when a push fails due to a version conflict. Helps the server distinguish retries from duplicate requests.
+</ParamField>
+
+---
+
+### Save document
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/session/{documentId}/save
+```
+
+</CodeGroup>
+
+Saves the current document content back to the Nextcloud file. Can be triggered manually or automatically.
+
+<ParamField path="documentId" type="integer" required>
+  The file ID of the document.
+</ParamField>
+
+<ParamField body="version" type="integer" required>
+  The document step version being saved.
+</ParamField>
+
+<ParamField body="autosaveContent" type="string" required>
+  The serialized document content (Markdown string) to write to the file.
+</ParamField>
+
+<ParamField body="documentState" type="string" required>
+  A serialized representation of the full document state, used for recovery.
+</ParamField>
+
+<ParamField body="force" type="boolean" default="false">
+  When `true`, saves even if the document has not changed since the last save.
+</ParamField>
+
+<ParamField body="manualSave" type="boolean" default="false">
+  When `true`, indicates the save was triggered by an explicit user action rather than an autosave timer.
+</ParamField>
+
+---
+
+### Close session
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/session/{documentId}/close
+```
+
+</CodeGroup>
+
+Closes the editing session and removes the user from the active session list. Call this when the editor is unmounted or the user navigates away.
+
+<ParamField path="documentId" type="integer" required>
+  The file ID of the document.
+</ParamField>
+
+<ParamField body="sessionId" type="integer" required>
+  The session ID returned by the `create` endpoint.
+</ParamField>
+
+<ParamField body="sessionToken" type="string" required>
+  The session token returned by the `create` endpoint.
+</ParamField>
+
+---
+
+### Send mention notification
+
+<CodeGroup>
+
+```http Request
+PUT /index.php/apps/text/session/{documentId}/mention
+```
+
+</CodeGroup>
+
+Sends a Nextcloud notification to a mentioned user. Rate-limited to 5 requests per 120 seconds per session.
+
+<ParamField path="documentId" type="integer" required>
+  The file ID of the document.
+</ParamField>
+
+<ParamField body="mention" type="string" required>
+  The Nextcloud user ID of the user to notify. Guest sessions can only mention users who are already active in the same document.
+</ParamField>
+
+---
+
+## Public session endpoints
+
+These endpoints are accessible via public share links. They mirror the authenticated endpoints but accept a share token instead of requiring a logged-in user. The base URL is `/index.php/apps/text/public`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `PUT` | `/public/session/{documentId}/create` | Create a session on a publicly shared document |
+| `POST` | `/public/session/{documentId}/sync` | Pull new steps from the server |
+| `POST` | `/public/session/{documentId}/push` | Push local changes |
+| `POST` | `/public/session/{documentId}/save` | Save the document |
+| `POST` | `/public/session/{documentId}/close` | Close the session |
+| `POST` | `/public/session/{documentId}/session` | Update session metadata (display name, etc.) |
+
+<Tip>
+The `updateSession` endpoint (`POST /public/session/{documentId}/session`) is only present on the public controller. It lets guest users set a display name that appears in the collaboration carets of other editors.
+</Tip>

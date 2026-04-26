@@ -1,0 +1,82 @@
+---
+title: "Creating and editing tables"
+description: "Add and manage tables in Nextcloud Text — insert rows and columns, merge cells, and use Markdown pipe table syntax in source view."
+---
+
+Nextcloud Text supports fully editable tables using the Tiptap table extension. You can insert tables from the toolbar, edit cells directly, and add or remove rows and columns using the table controls. Tables are serialized as Markdown pipe-table syntax so they remain readable in any text editor.
+
+## Inserting a table
+
+Click the **Table** button in the toolbar. A 3×3 table (one header row and two body rows) is inserted at the cursor position. You can also type pipe-table syntax directly and it will be parsed on paste or file load.
+
+<Note>
+You cannot insert a table while the cursor is already inside another table.
+</Note>
+
+## Navigating cells
+
+- Press `Tab` to move to the next cell. When you reach the last cell in the table, `Tab` moves the cursor to the first paragraph after the table.
+- Click any cell to place the cursor there.
+
+## Adding rows and columns
+
+When your cursor is inside a table (or you hover over it), two buttons appear:
+
+- **Add column after** — appears on the right edge of the table. Adds a new column to the right of the last column.
+- **Add row below** — appears below the table. Adds a new row at the bottom.
+
+You can also add rows relative to the current cursor position using the cell context menu (right-click or the column/row header controls).
+
+## Removing the table
+
+When the table is focused, a **table settings** button appears in the top-right corner. Open it and click **Delete this table** to remove the entire table from the document.
+
+## Column alignment
+
+Columns support left (default), center, and right alignment. Alignment is reflected in the Markdown separator row using colons:
+
+```markdown
+| Left | Center | Right |
+|------|:------:|------:|
+| A    |   B    |     C |
+```
+
+<Note>
+Cells containing complex content (such as nested lists or blockquotes) are always serialized with left alignment regardless of the column setting, to preserve Markdown compatibility.
+</Note>
+
+## Markdown pipe table syntax
+
+Tables are stored as standard Markdown pipe tables. You can paste or type pipe table syntax directly:
+
+```markdown
+| Name    | Role      | Location  |
+|---------|-----------|-----------|
+| Alice   | Engineer  | Berlin    |
+| Bob     | Designer  | Amsterdam |
+```
+
+The first row is always the header row. The separator line (`|---|`) is required and must appear directly after the header.
+
+### Alignment in syntax
+
+```markdown
+| Left aligned | Center aligned | Right aligned |
+|:-------------|:--------------:|--------------:|
+| Content      |    Content     |       Content |
+```
+
+## Multi-line cells
+
+Tables support content spanning multiple lines within a cell. In Markdown, continuation lines end with a backslash:
+
+```markdown
+| Name  | Notes                          |
+|-------|--------------------------------|
+| Alice | First line \
+|       | Second line                    |
+```
+
+<Tip>
+In the visual editor, complex block content (such as a list inside a table cell) is automatically serialized to multi-line format when you save.
+</Tip>

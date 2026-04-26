@@ -1,0 +1,214 @@
+---
+title: "Attachment REST API endpoints"
+description: "REST API reference for Nextcloud Text attachments — list, upload, create, and retrieve image and media files linked in documents."
+---
+
+Nextcloud Text stores document attachments in a hidden folder named `.attachments.{fileId}/` located alongside the document file. These endpoints, implemented in `lib/Controller/AttachmentController.php`, allow clients to list, insert, upload, create, and serve attachment files.
+
+<Info>
+All attachment endpoints are Nextcloud app routes under `/index.php/apps/text`. Most endpoints require an active document session. Image and media serving endpoints additionally accept a `shareToken` for public share access.
+</Info>
+
+## Storage location
+
+Attachments are stored at:
+
+```
+{document_folder}/.attachments.{documentFileId}/
+```
+
+For example, if `notes.md` has file ID `42` and lives in `/Documents/`, attachments are stored in `/Documents/.attachments.42/`.
+
+---
+
+## List attachments
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/attachments
+```
+
+</CodeGroup>
+
+Returns a list of all attachment files associated with the specified document.
+
+<ParamField body="documentId" type="integer" required>
+  The Nextcloud file ID of the document.
+</ParamField>
+
+<ParamField body="shareToken" type="string">
+  When provided, lists attachments accessible via the public share instead of the authenticated user's files.
+</ParamField>
+
+---
+
+## Insert existing file as attachment
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/attachment/filepath
+```
+
+</CodeGroup>
+
+Links an existing Nextcloud file into the document's attachment folder by copying or referencing it. Requires an active document session.
+
+<ParamField body="filePath" type="string" required>
+  The path to the existing Nextcloud file to insert, relative to the user's root folder.
+</ParamField>
+
+**Response**
+
+Returns the attachment metadata on success, or an object with an `error` key and HTTP 400 on failure.
+
+---
+
+## Upload a new attachment
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/attachment/upload
+```
+
+</CodeGroup>
+
+Uploads a new file and saves it into the document's attachment folder. Requires an active document session. The file must be submitted as a multipart form upload with the field name `file`.
+
+<ParamField body="file" type="file" required>
+  The file to upload, sent as `multipart/form-data` with field name `file`.
+</ParamField>
+
+<ParamField body="token" type="string">
+  A public share token. When provided, the file is uploaded into the attachment folder of the share instead of the authenticated user's files.
+</ParamField>
+
+**Response**
+
+Returns the uploaded attachment metadata on success. Returns HTTP 400 with an `error` message on upload failure (file too large, invalid path, etc.).
+
+---
+
+## Create a new attachment file
+
+<CodeGroup>
+
+```http Request
+POST /index.php/apps/text/attachment/create
+```
+
+</CodeGroup>
+
+Creates a new empty text file in the document's attachment folder. Useful for creating linked Markdown documents from within the editor. Requires an active document session.
+
+<ParamField body="fileName" type="string" default="text.md">
+  The name for the new file to create in the attachment folder.
+</ParamField>
+
+**Response**
+
+Returns the created attachment metadata on success. Returns HTTP 400 with an `error` message if the file name is invalid or if creation fails.
+
+---
+
+## Get an image file
+
+<CodeGroup>
+
+```http Request
+GET /index.php/apps/text/image
+```
+
+</CodeGroup>
+
+Serves an image attachment inline. The response is cached for 24 hours. Supported MIME types are `image/png`, `image/jpeg`, `image/jpg`, `image/gif`, `image/bmp`, `image/x-ms-bmp`, `image/x-xbitmap`, `image/svg+xml`, `image/webp`, `image/heic`, and `image/heif`.
+
+<ParamField query="imageFileName" type="string" required>
+  The file name of the image within the document's attachment folder.
+</ParamField>
+
+<ParamField query="documentId" type="integer" required>
+  The Nextcloud file ID of the parent document.
+</ParamField>
+
+<ParamField query="shareToken" type="string">
+  A public share token. Required when accessing an image on a publicly shared document.
+</ParamField>
+
+<ParamField query="preferRawImage" type="integer" default="0">
+  Set to `1` to request the original unprocessed image file instead of a converted or resized version. Useful for HEIC/HEIF images.
+</ParamField>
+
+**Response**
+
+Returns the image file as a `DataDownloadResponse` with the appropriate MIME type. Returns HTTP 404 if the image does not exist or cannot be read.
+
+<Warning>
+MIME types not in the explicit allowlist (for example, `image/heic`) are passed through `IMimeTypeDetector::getSecureMimeType()` to prevent content sniffing attacks.
+</Warning>
+
+---
+
+## Get a media file
+
+<CodeGroup>
+
+```http Request
+GET /index.php/apps/text/media
+```
+
+</CodeGroup>
+
+Serves a non-image media attachment (video, audio, PDF, etc.) for inline display or download.
+
+<ParamField query="mediaFileName" type="string" required>
+  The file name of the media file within the document's attachment folder.
+</ParamField>
+
+<ParamField query="documentId" type="integer" required>
+  The Nextcloud file ID of the parent document.
+</ParamField>
+
+<ParamField query="shareToken" type="string">
+  A public share token for accessing media on a publicly shared document.
+</ParamField>
+
+**Response**
+
+Returns the media file as a `DataDownloadResponse`. Returns HTTP 404 if the file does not exist.
+
+---
+
+## Get a media file preview
+
+<CodeGroup>
+
+```http Request
+GET /index.php/apps/text/mediaPreview
+```
+
+</CodeGroup>
+
+Returns a thumbnail or preview image for a media attachment. If a preview can be generated, it is returned as a `DataDownloadResponse`. If no preview is available but Nextcloud has a file-type icon, the response is a `RedirectResponse` to that icon URL.
+
+<ParamField query="mediaFileName" type="string" required>
+  The file name of the media file within the document's attachment folder.
+</ParamField>
+
+<ParamField query="documentId" type="integer" required>
+  The Nextcloud file ID of the parent document.
+</ParamField>
+
+<ParamField query="shareToken" type="string">
+  A public share token for accessing the preview on a publicly shared document.
+</ParamField>
+
+**Response types**
+
+| Scenario | Response |
+|---|---|
+| Preview image generated | `DataDownloadResponse` (HTTP 200) with the preview image |
+| No preview, icon available | `RedirectResponse` to the file-type icon URL |
+| No preview at all | `DataResponse` (HTTP 404) |

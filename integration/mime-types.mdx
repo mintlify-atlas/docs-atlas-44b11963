@@ -1,0 +1,136 @@
+---
+title: 'Adding support for custom MIME types'
+description: 'Extend Nextcloud Text to open additional file types by registering new MIME types — requirements, registration process, and testing guidance.'
+---
+
+Nextcloud Text can open any file whose MIME type appears in its supported list. This page explains how the MIME type list is structured, which types are supported out of the box, and what steps you need to follow to add support for a new file type.
+
+## How MIME type support works
+
+There are two separate layers that must both recognise a MIME type before Nextcloud Text can open files of that type:
+
+<Steps>
+  <Step title="Register the MIME type in the Nextcloud server">
+    The Nextcloud server must know about the MIME type before any app can use it. This is done by adding the type to the server's MIME type database. See the [Nextcloud server pull request #24488](https://github.com/nextcloud/server/pull/24488) for an example of how this is done.
+  </Step>
+
+  <Step title="Add the MIME type to the Text app list">
+    Once the server recognises the type, open a pull request to add it to `src/helpers/mime.js` in the Text repository. This is the file the Text app reads to decide which files it should offer to open.
+  </Step>
+</Steps>
+
+<Note>
+  Both steps are required. Adding the type only to the server means Nextcloud knows about the format but Text will not offer to open it. Adding it only to `mime.js` has no effect because the server will not associate those files with the Text app.
+</Note>
+
+## The MIME type list (`src/helpers/mime.js`)
+
+The Text app maintains two arrays of MIME types and exports a combined array:
+
+```js
+const openMimetypesMarkdown = ['text/markdown', 'text/x-web-markdown']
+
+const openMimetypesPlainText = [
+    'text/plain',
+    'application/cmd',
+    'application/x-empty',
+    'application/x-msdos-program',
+    'application/javascript',
+    'application/json',
+    'application/x-perl',
+    'application/x-php',
+    'application/x-tex',
+    'application/xml',
+    'application/yaml',
+    'text/asciidoc',
+    'text/css',
+    'text/html',
+    'text/org',
+    'text/x-c',
+    'text/x-c++src',
+    'text/x-h',
+    'text/x-java-source',
+    'text/x-ldif',
+    'text/x-nfo',
+    'text/x-python',
+    'text/x-shellscript',
+]
+
+if (!OC.appswebroots?.richdocuments && !OC.appswebroots?.onlyoffice) {
+    openMimetypesPlainText.push('text/csv')
+}
+
+const openMimetypes = [...openMimetypesMarkdown, ...openMimetypesPlainText]
+
+export { openMimetypes, openMimetypesMarkdown, openMimetypesPlainText }
+```
+
+### Markdown types
+
+| MIME type | Description |
+|---|---|
+| `text/markdown` | Standard Markdown files (`.md`) |
+| `text/x-web-markdown` | Alternate Markdown MIME type |
+
+### Plain text and code types
+
+| MIME type | Description |
+|---|---|
+| `text/plain` | Plain text files (`.txt`) |
+| `application/cmd` | Windows command scripts |
+| `application/x-empty` | Empty files |
+| `application/x-msdos-program` | MS-DOS program files |
+| `application/javascript` | JavaScript source files |
+| `application/json` | JSON data files |
+| `application/x-perl` | Perl scripts |
+| `application/x-php` | PHP source files |
+| `application/x-tex` | LaTeX/TeX files |
+| `application/xml` | XML documents |
+| `application/yaml` | YAML files |
+| `text/asciidoc` | AsciiDoc files |
+| `text/css` | CSS stylesheets |
+| `text/html` | HTML documents |
+| `text/org` | Org-mode files |
+| `text/x-c` | C source files |
+| `text/x-c++src` | C++ source files |
+| `text/x-h` | C/C++ header files |
+| `text/x-java-source` | Java source files |
+| `text/x-ldif` | LDAP Data Interchange Format files |
+| `text/x-nfo` | NFO info files |
+| `text/x-python` | Python source files |
+| `text/x-shellscript` | Shell scripts |
+
+### Conditional types
+
+`text/csv` is added to `openMimetypesPlainText` only when neither Collabora Online (`richdocuments`) nor ONLYOFFICE (`onlyoffice`) is installed. When those apps are present, they take priority for CSV files.
+
+## Adding a new MIME type
+
+Follow these steps to add support for a file type that is not yet in the list.
+
+<Steps>
+  <Step title="Open a pull request to the Nextcloud server">
+    The MIME type must first be registered in the Nextcloud server's MIME type mappings. See [server pull request #24488](https://github.com/nextcloud/server/pull/24488) for an example of the change required.
+  </Step>
+
+  <Step title="Add the type to src/helpers/mime.js">
+    Once the server PR is merged (or in progress), open a pull request to the Text repository adding the MIME type to the appropriate array in `src/helpers/mime.js`.
+
+    Add the type to `openMimetypesMarkdown` if it is a Markdown variant, or to `openMimetypesPlainText` if it is a plain text or code format:
+
+    ```js
+    const openMimetypesPlainText = [
+        // existing types ...
+        'text/x-your-new-type',  // add here
+    ]
+    ```
+  </Step>
+
+  <Step title="Write a Cypress test">
+    Test the new type in `cypress/e2e/files.spec.js`, following the same pattern used for existing MIME types in that file. The Cypress tests require a running Nextcloud server.
+  </Step>
+</Steps>
+
+<Tip>
+  Link your Text pull request to the server pull request so reviewers can verify that both sides of the change are in place.
+</Tip>

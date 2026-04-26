@@ -1,0 +1,68 @@
+---
+title: "Images and file attachments"
+description: "Upload images and attach media files in Nextcloud Text documents — drag and drop, file picker, paste, and attachment folder structure."
+---
+
+Nextcloud Text lets you embed images directly in your documents. Attachments are stored as regular files in Nextcloud Files alongside your document, and they are referenced using standard Markdown image syntax. This page explains how to insert images and how attachments are managed.
+
+## Inserting images
+
+You can add an image to your document in three ways:
+
+<CardGroup cols={3}>
+  <Card title="Drag and drop" icon="arrow-down-to-line">
+    Drag an image file from your computer and drop it into the editor. The file is uploaded automatically and inserted at the drop position.
+  </Card>
+  <Card title="Upload from computer" icon="upload">
+    Click the **Insert attachment** button (paperclip icon) in the toolbar, then choose **Upload from computer** to select a local file.
+  </Card>
+  <Card title="Insert from Files" icon="folder">
+    Click **Insert attachment** and choose **Insert from Files** to select an existing file from your Nextcloud Files storage. This option is not available on public share links.
+  </Card>
+</CardGroup>
+
+You can also paste an image directly from your clipboard. If the clipboard contains image data (for example, a screenshot), the editor detects it and uploads the image automatically.
+
+## Attachment storage
+
+Uploaded attachments are stored in a dedicated folder next to your document in Nextcloud Files. The folder is named using the pattern:
+
+```
+.attachments.{fileId}/
+```
+
+where `{fileId}` is the numeric ID of the document file. For example, if your document has file ID `12345`, attachments are stored in `.attachments.12345/`.
+
+This folder is created automatically on first upload. You can manage its contents from the Nextcloud Files app like any other folder.
+
+<Warning>
+Attachments cannot be uploaded when you are offline or when the document is shared from another Nextcloud instance (the file has no local owner). The **Insert attachment** button is disabled in those cases.
+</Warning>
+
+## How images are referenced in Markdown
+
+Each uploaded image is inserted as a block-level Markdown image:
+
+```markdown
+![Image description](./attachments.12345/my-screenshot.png)
+```
+
+The path is relative to the document's location in Nextcloud Files. If you move the document to a different folder, update the image paths accordingly so they continue to resolve correctly.
+
+Inline images (images appearing within a line of text) use the same syntax and are also supported when parsing Markdown from external sources:
+
+```markdown
+A picture: ![alt text](./attachments.12345/picture.png) inline with text.
+```
+
+## Supported file types
+
+The attachment upload accepts image files that your browser can render. Common formats include PNG, JPEG, GIF, WebP, and SVG.
+
+<Tip>
+If your Nextcloud instance has the Collectives app installed, template files from Collectives are also available in the attachment picker. The "New text file" template is excluded since it would create a nested Markdown document.
+</Tip>
+
+## Attachment tracking
+
+The editor tracks all images referenced in the current document and emits an update event whenever the set of attachment sources changes. This allows the Nextcloud interface to highlight or manage attachment files that are no longer referenced by the document.

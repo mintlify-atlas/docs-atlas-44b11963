@@ -1,0 +1,95 @@
+---
+title: 'Direct editing for mobile and external apps'
+description: 'Open Nextcloud Text documents directly from mobile apps or external clients using the direct editing API with one-time session tokens.'
+---
+
+Nextcloud Text supports the Nextcloud direct editing API, which allows mobile apps and external clients to open a text document in the browser without a full Nextcloud session. The client requests a one-time token from the server and opens the returned URL to land directly in the Text editor.
+
+## How direct editing works
+
+Direct editing is provided by the Nextcloud server's files app (`OCP\DirectEditing`). When a client calls the direct editing endpoint, the server generates a short-lived, one-time token tied to the requested file and editor. Opening the URL with that token launches the editor and immediately invalidates the token.
+
+The Text app registers itself as a direct editor through the `OCA\Text\DirectEditing\TextDirectEditor` class, which implements `OCP\DirectEditing\IEditor`. It also provides `OCA\Text\DirectEditing\TextDocumentCreator` for creating new text documents via the same flow.
+
+<Note>
+  The direct editing token expires the first time the URL is opened. It cannot be reused.
+</Note>
+
+## Opening a direct editing session
+
+Use the Nextcloud OCS API to request a direct editing URL. The following `curl` command demonstrates the request:
+
+```bash
+curl --silent --insecure --request POST \
+  --url 'https://admin:admin@nextcloud.local/ocs/v2.php/apps/files/api/v1/directEditing/open?editorId=text&creatorId=textdocument&format=json' \
+  --header 'Content-Type: multipart/form-data' \
+  --header 'OCS-APIRequest: true' \
+  --form path=/test.md | jq -r '.ocs.data.url'
+```
+
+The relevant query parameters are:
+
+| Parameter | Value | Description |
+|---|---|---|
+| `editorId` | `text` | The ID of the Text direct editor. |
+| `creatorId` | `textdocument` | The creator ID for new text documents. |
+| `format` | `json` | Response format. |
+| `path` | `/test.md` (form field) | Path of the file to open, relative to the user's files root. |
+
+The response contains a URL in `.ocs.data.url`. Open that URL in a browser or a web view to launch the editor.
+
+## Testing direct editing locally
+
+<Steps>
+  <Step title="Start your local Nextcloud instance">
+    Ensure your Nextcloud development environment is running and the Text app is enabled.
+  </Step>
+
+  <Step title="Create a test file">
+    Place a Markdown file at the path you intend to open, for example `/test.md`, in the admin user's files.
+  </Step>
+
+  <Step title="Request a direct editing URL">
+    Run the `curl` command shown above, substituting your Nextcloud URL and credentials. The command pipes the response through `jq` to extract the URL:
+
+    ```bash
+    curl --silent --insecure --request POST \
+      --url 'https://admin:admin@nextcloud.local/ocs/v2.php/apps/files/api/v1/directEditing/open?editorId=text&creatorId=textdocument&format=json' \
+      --header 'Content-Type: multipart/form-data' \
+      --header 'OCS-APIRequest: true' \
+      --form path=/test.md | jq -r '.ocs.data.url'
+    ```
+  </Step>
+
+  <Step title="Open the URL">
+    Paste the returned URL into a browser. The Text editor opens immediately, loading the file via the one-time token.
+  </Step>
+</Steps>
+
+<Warning>
+  The token in the URL is single-use. Refreshing the page or opening the URL a second time will not work — you must request a new URL for each session.
+</Warning>
+
+## Supported MIME types
+
+The Text direct editor accepts the same MIME types registered by the app. These are defined in `OCA\Text\DirectEditing\TextDirectEditor::getMimetypes()` and include:
+
+- `text/markdown`
+- `text/plain`
+- `application/json`
+- `application/javascript`
+- `application/xml`
+- `application/yaml`
+- `application/x-php`
+- `application/x-perl`
+- `text/css`
+- `text/html`
+- `text/csv`
+- `text/org`
+- `text/x-python`
+- `text/x-shellscript`
+- And others (see [MIME type support](/integration/mime-types) for the full list)
+
+## Creating new files via direct editing
+
+The `TextDocumentCreator` (creator ID: `textdocument`) supports creating new empty documents through the direct editing flow. The default file extension is `md`, producing a `text/markdown` file. When the server is configured to use `txt` as the default extension, the creator produces `text/plain` files instead.

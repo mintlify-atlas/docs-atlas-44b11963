@@ -1,0 +1,168 @@
+---
+title: "Workspace OCS API endpoints"
+description: "OCS API reference for Nextcloud Text workspaces — retrieve folder README content for authenticated users and public share links."
+---
+
+Nextcloud Text includes a "rich workspace" feature that displays a `README.md` (or similar) file at the top of a folder in Nextcloud Files. The workspace endpoints let you retrieve or open that file programmatically. This page documents all three endpoints defined in the OCS section of `appinfo/routes.php` and implemented in `lib/Controller/WorkspaceController.php`.
+
+## OCS API format
+
+Workspace endpoints use the [Nextcloud OCS API](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/OCS/ocs-api-overview.html). Requests must include an `OCS-APIREQUEST: true` header, and the response is wrapped in an `ocs` envelope:
+
+```json
+{
+  "ocs": {
+    "meta": {
+      "status": "ok",
+      "statuscode": 200
+    },
+    "data": { ... }
+  }
+}
+```
+
+The base URL for OCS requests is `/ocs/v2.php/apps/text`.
+
+---
+
+## Get folder workspace
+
+<CodeGroup>
+
+```http Request
+GET /ocs/v2.php/apps/text/workspace
+```
+
+</CodeGroup>
+
+Returns metadata for the `README.md` file in the specified folder, along with the folder's permission bitmask. If no workspace file exists, returns HTTP 404 with the folder permissions so the client can offer to create one.
+
+<ParamField query="path" type="string" default="/">
+  Path to the folder relative to the authenticated user's root folder. For example, `/Documents/Project`.
+</ParamField>
+
+**Response — workspace file found (HTTP 200)**
+
+<ResponseField name="file" type="object">
+  Metadata for the workspace file.
+  <Expandable title="file properties">
+    <ResponseField name="file.id" type="integer">
+      The Nextcloud file ID of the workspace file.
+    </ResponseField>
+    <ResponseField name="file.mimetype" type="string">
+      MIME type of the file (e.g. `text/markdown`).
+    </ResponseField>
+    <ResponseField name="file.name" type="string">
+      File name (e.g. `README.md`).
+    </ResponseField>
+    <ResponseField name="file.path" type="string">
+      Path relative to the user's root folder.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="folder" type="object">
+  <Expandable title="folder properties">
+    <ResponseField name="folder.permissions" type="integer">
+      Nextcloud permission bitmask for the folder (uses the `OCP\Constants` bitmask values).
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+**Response — no workspace file (HTTP 404)**
+
+```json
+{
+  "ocs": {
+    "meta": { "status": "failure", "statuscode": 404 },
+    "data": {
+      "message": "No workspace file found",
+      "folder": { "permissions": 31 }
+    }
+  }
+}
+```
+
+<Note>
+Even when the workspace file does not exist, the response includes `folder.permissions`. A client should check this value before offering to create a new `README.md` — a permissions value without the `PERMISSION_CREATE` bit set means the user cannot create files in that folder.
+</Note>
+
+---
+
+## Get public folder workspace
+
+<CodeGroup>
+
+```http Request
+GET /ocs/v2.php/apps/text/public/workspace
+```
+
+</CodeGroup>
+
+Returns workspace metadata for a publicly shared folder. Requires a valid public share token. Password-protected shares require the authenticated share session cookie in addition to the token.
+
+<ParamField query="shareToken" type="string" required>
+  The public share token from the share link URL.
+</ParamField>
+
+<ParamField query="path" type="string" default="/">
+  Path relative to the share root.
+</ParamField>
+
+**Response — workspace file found (HTTP 200)**
+
+<ResponseField name="file" type="object">
+  <Expandable title="file properties">
+    <ResponseField name="file.id" type="integer">
+      The Nextcloud file ID.
+    </ResponseField>
+    <ResponseField name="file.mimetype" type="string">
+      MIME type of the workspace file.
+    </ResponseField>
+    <ResponseField name="file.name" type="string">
+      File name.
+    </ResponseField>
+    <ResponseField name="file.path" type="string">
+      Path relative to the share root, in the form `{path}/{name}`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Note>
+The public endpoint does not return `folder.permissions` in the success response — only `file` metadata.
+</Note>
+
+---
+
+## Direct workspace access
+
+<CodeGroup>
+
+```http Request
+POST /ocs/v2.php/apps/text/workspace/direct
+```
+
+</CodeGroup>
+
+Returns a [direct editing](https://docs.nextcloud.com/server/latest/developer_manual/client_apis/DirectEditing/index.html) URL for the workspace `README.md` in the specified folder. If the file does not exist, it is created using the first supported filename (typically `README.md`). Requires the user to be authenticated.
+
+<ParamField body="path" type="string" required>
+  Path to the folder relative to the user's root folder.
+</ParamField>
+
+**Response (HTTP 200)**
+
+<ResponseField name="url" type="string">
+  An absolute URL to the Nextcloud Direct Editing view for the workspace file. This URL contains a short-lived token and can be opened directly in a browser.
+</ResponseField>
+
+```json
+{
+  "ocs": {
+    "meta": { "status": "ok", "statuscode": 200 },
+    "data": {
+      "url": "https://nextcloud.example.com/index.php/apps/files/directEditing/edit?token=abc123"
+    }
+  }
+}
+```
